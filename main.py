@@ -1,8 +1,10 @@
 import Preprocessing.carga as carga
 import Preprocessing.rango_sensor as rango_sensor
 import Preprocessing.suavizado as suavizado
-import Preprocessing.tiempo_ciclico as tiempo_ciclico
+import Feature_Engineering.tiempo_ciclico as tiempo_ciclico
 import Preprocessing.visualizacion as visualizacion
+import Feature_Engineering.IOB_insulina_activa as iob
+import Feature_Engineering.COB_carbohidratos_activos as cob
 from config import OUTPUT_FILE
 
 def preprocessing():
@@ -19,6 +21,12 @@ def preprocessing():
     # Tiempo cíclico
     df = tiempo_ciclico.codificar_tiempo_ciclico(df)
     
+    # Insulina activa IOB
+    df = iob.compute_iob(df)
+
+    # Carbohidratos activos COB
+    df = cob.compute_cob(df)
+
     # Guardar resultado final
     df.to_csv(OUTPUT_FILE)
 

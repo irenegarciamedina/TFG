@@ -11,16 +11,16 @@ from config import GLUCOSE_COL, PLOT_FILE, REPORT_FILE, INPUT_FILE, OUTPUT_FILE,
 def calcular_metricas_clinicas(df):
     g = df[GLUCOSE_COL]
     return {
-        "TiR"   : ((g >= 70) & (g <= 180)).mean() * 100,
-        "TBR_1" : ((g >= 54) & (g < 70)).mean()   * 100,
-        "TBR_2" : (g < 54).mean()                  * 100,
-        "TAR_1" : ((g > 180) & (g <= 250)).mean()  * 100,
-        "TAR_2" : (g > 250).mean()                  * 100,
-        "media" : g.mean(),
-        "sd"    : g.std(),
-        "cv"    : (g.std() / g.mean() * 100) if g.mean() != 0 else 0,
-        "gmi"   : 3.31 + 0.02392 * g.mean(),
-        "dias"  : (df.index.max() - df.index.min()).days,
+        "TiR"   : ((g >= 70) & (g <= 180)).mean() * 100,        # tiempo en rango entre 70 y 180
+        "TBR_1" : ((g >= 54) & (g < 70)).mean()   * 100,        # hipoglucemia leve
+        "TBR_2" : (g < 54).mean()                  * 100,       # hipoglucemia severa
+        "TAR_1" : ((g > 180) & (g <= 250)).mean()  * 100,       # hiperglucemia leve
+        "TAR_2" : (g > 250).mean()                  * 100,      # hiperglucemia severa
+        "media" : g.mean(),                                     # valor medio de glucemia del paciente
+        "sd"    : g.std(),                                      # desviación estándar de las lecturas
+        "cv"    : (g.std() / g.mean() * 100) if g.mean() != 0 else 0,   # coeficiente de variabilidad para determinar la estabilidad 
+        "gmi"   : 3.31 + 0.02392 * g.mean(),                    # estimación de la HbA1c
+        "dias"  : (df.index.max() - df.index.min()).days,       # intervalo de tiempo que el dataset abarca
     }
 
 def generar_diagnostico(df):
