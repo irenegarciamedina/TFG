@@ -9,7 +9,7 @@ import sys
 # ------------------------------------------------------------------------------
 # RUTAS DE ARCHIVOS
 # ------------------------------------------------------------------------------
-INPUT_FILE  = sys.argv[1] if len(sys.argv) > 1 else "datos/HUPA0001P.csv"
+INPUT_FILE  = sys.argv[1] if len(sys.argv) > 1 else "Datos/HUPA0001P.csv"
 OUTPUT_FILE = INPUT_FILE.replace(".csv", "_preprocessing.csv")
 REPORT_FILE = "Preprocessing/output/Preprocessing.txt"
 PLOT_FILE   = "Preprocessing/output/Preprocessing.png"
