@@ -6,15 +6,13 @@ Para cambiar cualquier parámetro basta con editar este único archivo.
 
 import sys
 
-OUTPUT_FOLDER = "output"
-
 # ------------------------------------------------------------------------------
 # RUTAS DE ARCHIVOS
 # ------------------------------------------------------------------------------
 INPUT_FILE  = sys.argv[1] if len(sys.argv) > 1 else "datos/HUPA0001P.csv"
-OUTPUT_FILE = INPUT_FILE.replace(".csv", "_fase1.csv")
-REPORT_FILE = "Preprocessing.txt"
-PLOT_FILE   = "Preprocessing.png"
+OUTPUT_FILE = INPUT_FILE.replace(".csv", "_preprocessing.csv")
+REPORT_FILE = "Preprocessing/output/Preprocessing.txt"
+PLOT_FILE   = "Preprocessing/output/Preprocessing.png"
 
 # ------------------------------------------------------------------------------
 # COLUMNAS DEL DATASET HUPA-UCM

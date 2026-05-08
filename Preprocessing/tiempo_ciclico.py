@@ -6,7 +6,7 @@ import pandas as pd
 
 def codificar_tiempo_ciclico(df: pd.DataFrame) -> pd.DataFrame:
     
-    print("\n[3/3] Codificación cíclica del tiempo (ritmos circadianos)...")
+    print("\n[3/3] Codificación cíclica del tiempo...")
 
     t = df.index
 
@@ -19,7 +19,7 @@ def codificar_tiempo_ciclico(df: pd.DataFrame) -> pd.DataFrame:
 
 
     # Día de la semana (0 = lunes, 6 = domingo)
-    
+
     dow = t.dayofweek.astype(float)
     df["time_dow_sin"] = np.sin(2 * np.pi * dow / 7)
     df["time_dow_cos"] = np.cos(2 * np.pi * dow / 7)
