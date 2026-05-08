@@ -1,9 +1,3 @@
-"""
-config.py — Configuración centralizada de la Fase 1
-Todos los módulos importan sus constantes desde aquí.
-Para cambiar cualquier parámetro basta con editar este único archivo.
-"""
-
 import sys
 
 # ------------------------------------------------------------------------------
