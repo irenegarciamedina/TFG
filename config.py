@@ -13,8 +13,8 @@ OUTPUT_FOLDER = "output"
 # ------------------------------------------------------------------------------
 INPUT_FILE  = sys.argv[1] if len(sys.argv) > 1 else "datos/HUPA0001P.csv"
 OUTPUT_FILE = INPUT_FILE.replace(".csv", "_fase1.csv")
-REPORT_FILE = "fase1_reporte.txt"
-PLOT_FILE   = "fase1_diagnostico.png"
+REPORT_FILE = "Preprocessing.txt"
+PLOT_FILE   = "Preprocessing.png"
 
 # ------------------------------------------------------------------------------
 # COLUMNAS DEL DATASET HUPA-UCM

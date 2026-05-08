@@ -5,6 +5,9 @@ import matplotlib.dates as mdates
 import matplotlib.gridspec as gridspec
 from config import GLUCOSE_COL, PLOT_FILE, REPORT_FILE, INPUT_FILE, OUTPUT_FILE, ROLLING_WINDOW
 
+
+# CÁLCULO DE LAS MÉTRICAS
+
 def calcular_metricas_clinicas(df):
     g = df[GLUCOSE_COL]
     return {
@@ -23,13 +26,17 @@ def calcular_metricas_clinicas(df):
 def generar_diagnostico(df):
     metricas = calcular_metricas_clinicas(df)
     
-    # --- CONFIGURACIÓN DE ESTILO ---
+
+    # CONFIGURACIÓN DEL ESTILO
+
     print(f"\n[+] Restaurando dashboard completo en: {PLOT_FILE}")
     fig = plt.figure(figsize=(18, 16))
     gs  = gridspec.GridSpec(3, 2, figure=fig, hspace=0.45, wspace=0.35)
     C_RAW, C_CLEAN, C_VERDE = "#A8C8E8", "#C0392B", "#27AE60"
 
-    # 1. Serie temporal completa con anotaciones
+
+    # Serie temporal 
+
     ax1 = fig.add_subplot(gs[0, :])
     ax1.plot(df.index, df["glucose_raw"], color=C_RAW, lw=0.7, alpha=0.6, label="Señal cruda")
     ax1.plot(df.index, df[GLUCOSE_COL], color=C_CLEAN, lw=1.3, label="Señal suavizada")
@@ -42,7 +49,9 @@ def generar_diagnostico(df):
     ax1.legend(fontsize=8, loc="upper right")
     ax1.grid(alpha=0.2)
 
-    # 2. Zoom 48 horas (Efecto suavizado)
+
+    # 2. Suavizado de 48 horas
+
     ax2 = fig.add_subplot(gs[1, 0])
     z0 = df.index.min()
     z1 = z0 + pd.Timedelta(hours=48)
@@ -55,7 +64,9 @@ def generar_diagnostico(df):
     ax2.legend(fontsize=7)
     ax2.grid(alpha=0.2)
 
-    # 3. Histograma de Densidad
+
+    # 3. Histograma de densidad
+
     ax3 = fig.add_subplot(gs[1, 1])
     bins = np.linspace(30, 420, 75)
     ax3.hist(df["glucose_raw"], bins=bins, color=C_RAW, alpha=0.6, density=True, label="Cruda")
@@ -66,14 +77,18 @@ def generar_diagnostico(df):
     ax3.set_ylabel("Densidad")
     ax3.legend(fontsize=7)
 
+
     # 4. Reloj Cicadiano (Seno/Coseno)
+
     ax4 = fig.add_subplot(gs[2, 0])
     sc = ax4.scatter(df["time_hour_sin"], df["time_hour_cos"], c=df.index.hour + df.index.minute/60, cmap="twilight", s=4, alpha=0.5)
     plt.colorbar(sc, ax=ax4, label="Hora del día")
     ax4.set_title("Codificación cíclica (Evita discontinuidad 23h->0h)", fontweight="bold", fontsize=9)
     ax4.set_aspect("equal")
 
-    # 5. Métricas AGP con Objetivos Clínicos
+
+    # 5. Métricas AGP con objetivos clínicos
+
     ax5 = fig.add_subplot(gs[2, 1])
     categorias = ["TBR-2\n(<54)", "TBR-1\n(54-70)", "TiR\n(70-180)", "TAR-1\n(180-250)", "TAR-2\n(>250)"]
     valores = [metricas["TBR_2"], metricas["TBR_1"], metricas["TiR"], metricas["TAR_1"], metricas["TAR_2"]]
@@ -88,7 +103,8 @@ def generar_diagnostico(df):
     plt.savefig(PLOT_FILE, dpi=150, bbox_inches="tight")
     plt.close()
 
-    # --- GENERAR REPORTE TXT COMPLETO ---
+    # GENERAR TXT 
+    
     estado_dm = "inestable (CV > 36%)" if metricas["cv"] > 36 else "estable (CV <= 36%)"
     reporte = f"""
 ================================================================================
