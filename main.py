@@ -5,8 +5,8 @@ import Preprocessing.tiempo_ciclico as tiempo_ciclico
 import Preprocessing.visualizacion as visualizacion
 from config import OUTPUT_FILE
 
-def ejecutar_fase1():
-    
+def preprocessing():
+
     # Paso 0: Carga
     df = carga.cargar_datos()
     
@@ -27,4 +27,4 @@ def ejecutar_fase1():
     print(f"\n[FIN] Proceso completado. Archivo guardado en: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
-    ejecutar_fase1()
+    preprocessing()
