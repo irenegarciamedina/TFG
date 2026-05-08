@@ -7,16 +7,16 @@ from config import OUTPUT_FILE
 
 def preprocessing():
 
-    # Paso 0: Carga
+    # Carga
     df = carga.cargar_datos()
     
-    # Paso 1: Rango del sensor
+    # Rango del sensor
     df = rango_sensor.corregir_rango_sensor(df)
     
-    # Paso 2: Suavizado
+    # Suavizado
     df = suavizado.suavizar_senal(df)
     
-    # Paso 3: Tiempo cíclico
+    # Tiempo cíclico
     df = tiempo_ciclico.codificar_tiempo_ciclico(df)
     
     # Guardar resultado final
