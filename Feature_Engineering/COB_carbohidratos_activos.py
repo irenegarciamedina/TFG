@@ -23,3 +23,5 @@ def compute_cob(df, carb_col='carb_input', interval_min=5, absorption_min=180):
     
     df['cob'] = cob
     return df
+
+#prueba
