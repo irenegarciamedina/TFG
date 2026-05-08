@@ -1,0 +1,34 @@
+"""
+config.py — Configuración centralizada de la Fase 1
+Todos los módulos importan sus constantes desde aquí.
+Para cambiar cualquier parámetro basta con editar este único archivo.
+"""
+
+import sys
+
+OUTPUT_FOLDER = "output"
+
+# ------------------------------------------------------------------------------
+# RUTAS DE ARCHIVOS
+# ------------------------------------------------------------------------------
+INPUT_FILE  = sys.argv[1] if len(sys.argv) > 1 else "datos/HUPA0001P.csv"
+OUTPUT_FILE = INPUT_FILE.replace(".csv", "_fase1.csv")
+REPORT_FILE = "fase1_reporte.txt"
+PLOT_FILE   = "fase1_diagnostico.png"
+
+# ------------------------------------------------------------------------------
+# COLUMNAS DEL DATASET HUPA-UCM
+# ------------------------------------------------------------------------------
+TIME_COL    = "time"
+GLUCOSE_COL = "glucose"
+
+# ------------------------------------------------------------------------------
+# PARÁMETROS DEL SENSOR FREESTYLE LIBRE 2 (Abbott)
+# ------------------------------------------------------------------------------
+SENSOR_MAX = 400.0   # mg/dL — límite superior certificado del sensor
+SENSOR_MIN = 40.0    # mg/dL — límite inferior certificado del sensor
+
+# ------------------------------------------------------------------------------
+# PARÁMETROS DE SUAVIZADO
+# ------------------------------------------------------------------------------
+ROLLING_WINDOW = 3   # intervalos × 5 min = ventana de 15 min centrada

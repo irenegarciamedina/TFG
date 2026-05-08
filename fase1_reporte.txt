@@ -1,0 +1,19 @@
+
+================================================================================
+REPORTE FASE 1 -- PREPROCESAMIENTO DE LA SEÑAL
+================================================================================
+Paciente : datos/HUPA0001P.csv
+Duración : 14 días | 4,096 registros
+
+MÉTRICAS CLÍNICAS (AGP):
+  TiR (70-180 mg/dL) :   56.5% (Objetivo >= 70%)
+  TBR (< 70 mg/dL)   :    1.2% (Objetivo < 4%)
+  Media Glucosa      : 181.4 mg/dL
+  Variabilidad (CV)  : 37.9% -> Diabetes inestable (CV > 36%)
+  GMI (HbA1c est.)   : 7.65%
+
+PROCESAMIENTO APLICADO:
+  1. Rango corregido (40-400 mg/dL)
+  2. Suavizado (Ventana móvil 15 min)
+  3. Tiempo cíclico (Sen/Cos 24h y 7 días)
+================================================================================
