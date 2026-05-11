@@ -5,6 +5,7 @@ import Feature_Engineering.tiempo_ciclico as tiempo_ciclico
 import Preprocessing.visualizacion as visualizacion
 import Feature_Engineering.IOB_insulina_activa as iob
 import Feature_Engineering.COB_carbohidratos_activos as cob
+import ML_Exploratorio.random_forest as rf
 from config import OUTPUT_FILE
 
 def preprocessing():
@@ -33,6 +34,12 @@ def preprocessing():
     visualizacion.generar_diagnostico(df)
 
     print(f"\n[FIN] Proceso completado. Archivo guardado en: {OUTPUT_FILE}")
+
+    ML()
+
+def ML():
+    # random forest
+    df = rf.ejecutar_random_forest()
 
 if __name__ == "__main__":
     preprocessing()

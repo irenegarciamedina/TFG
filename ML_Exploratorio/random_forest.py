@@ -69,3 +69,53 @@ def train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
     return rf
 
 # parámetros definidos en el ML_Exploratorio.config
+
+def evaluar(
+    rf: RandomForestRegressor,
+    X_train: np.ndarray,
+    X_test: np.ndarray,
+    y_train: np.ndarray,
+    y_test: np.ndarray,
+    features: list,
+    df: pd.DataFrame,
+) -> dict:
+    y_pred_train = rf.predict(X_train)
+    y_pred_test  = rf.predict(X_test)
+
+    rmse_train = np.sqrt(mean_squared_error(y_train, y_pred_train))
+    rmse_test  = np.sqrt(mean_squared_error(y_test, y_pred_test))
+    mae_test   = mean_absolute_error(y_test, y_pred_test)
+    r2_test    = r2_score(y_test, y_pred_test)
+
+    print(f"\n[RF] Métricas de rendimiento (horizonte {HORIZON_MIN} min):")
+    print(f"      RMSE train : {rmse_train:.2f} mg/dL")
+    print(f"      RMSE test  : {rmse_test:.2f}  mg/dL  ← línea base para la LSTM")
+    print(f"      MAE  test  : {mae_test:.2f}  mg/dL")
+    print(f"      R²   test  : {r2_test:.4f}")
+
+    # Importancia por Mean Decrease in Impunity
+    importancias_mdi = pd.Series(rf.feature_importances_, index=features).sort_values(ascending=False)
+
+
+    # Importacia por Permutación 
+    print("\n[RF] Calculando importancia por permutación (puede tardar ~30 s)...")
+    perm = permutation_importance(
+        rf, X_test, y_test,
+        n_repeats=15, random_state=RF_RANDOM_STATE, n_jobs=-1,
+    )
+    importancias_perm = pd.Series(perm.importances_mean, index=features).sort_values(ascending=False)
+    perm_std = pd.Series(perm.importances_std,  index=features)
+
+    print("\n[RF] Ranking de importancia (permutación — más fiable):")
+    for feat, val in importancias_perm.items():
+        barra = "█" * int(val * 400)
+        print(f"      {feat:<28} {val:.4f}  {barra}")
+
+def ejecutar_random_forest() -> dict:
+    df, features = cargar_datos()
+    X, y = construir_xy(df, features)
+    X_train, X_test, y_train, y_test = dividir_temporal(X, y)
+    print(f"\n[RF] Muestras — train: {len(X_train):,}  |  test: {len(X_test):,}")
+
+    rf = train_rf(X_train, y_train) 
+    return {"rf_model": rf, "features": features}
