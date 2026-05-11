@@ -114,16 +114,16 @@ Paciente : {INPUT_FILE}
 Duración : {metricas['dias']} días | {len(df):,} registros
 
 MÉTRICAS CLÍNICAS (AGP):
-  TiR (70-180 mg/dL) : {metricas['TiR']:>6.1f}% (Objetivo >= 70%)
-  TBR (< 70 mg/dL)   : {metricas['TBR_1']+metricas['TBR_2']:>6.1f}% (Objetivo < 4%)
-  Media Glucosa      : {metricas['media']:.1f} mg/dL
-  Variabilidad (CV)  : {metricas['cv']:.1f}% -> Diabetes {estado_dm}
-  GMI (HbA1c est.)   : {metricas['gmi']:.2f}%
+    TiR (70-180 mg/dL) : {metricas['TiR']:>6.1f}% (Objetivo >= 70%)
+    TBR (< 70 mg/dL)   : {metricas['TBR_1']+metricas['TBR_2']:>6.1f}% (Objetivo < 4%)
+    Media Glucosa      : {metricas['media']:.1f} mg/dL
+    Variabilidad (CV)  : {metricas['cv']:.1f}% -> Diabetes {estado_dm}
+    GMI (HbA1c est.)   : {metricas['gmi']:.2f}%
 
 PROCESAMIENTO APLICADO:
-  1. Rango corregido (40-400 mg/dL)
-  2. Suavizado (Ventana móvil {ROLLING_WINDOW*5} min)
-  3. Tiempo cíclico (Sen/Cos 24h y 7 días)
+    1. Rango corregido (40-400 mg/dL)
+    2. Suavizado (Ventana móvil {ROLLING_WINDOW*5} min)
+    3. Tiempo cíclico (Sen/Cos 24h y 7 días)
 ================================================================================
 """
     with open(REPORT_FILE, "w", encoding="utf-8") as f:

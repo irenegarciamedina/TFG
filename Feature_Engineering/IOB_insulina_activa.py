@@ -5,7 +5,7 @@ import pandas as pd
 # duration min: duracción total de acción en minuto
 
 def compute_iob(df, bolus_col='bolus_volume_delivered', interval_min=5, peak_min=75, duration_min=240):
-   
+
     # Curva de actividad de insulina (triangular normalizada)
 
     n_steps = duration_min // interval_min
