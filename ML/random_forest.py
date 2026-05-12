@@ -68,7 +68,7 @@ def train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
     print(f"      -> Entrenamiento completado  |  OOB score: {'N/A (oob_score=False)'}")
     return rf
 
-# parámetros definidos en el ML_Exploratorio.config
+# parámetros definidos en el MLconfig
 
 def evaluar(
     rf: RandomForestRegressor,
