@@ -19,11 +19,27 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-from config import (
-    PLOT_RF, REPORT_FILE, OUTPUT_DIR,
-    HORIZON_MIN, HORIZON_STEPS, TRAIN_RATIO,
-    RF_N_ESTIMATORS,
-)
+# ---------------------------------------------------------------------------
+# Import del config compatible con dos contextos de ejecución:
+#   · Como módulo desde la raíz:  from ML_Exploratorio.config import ...
+#   · Como script directamente:   python ML_Exploratorio/visualizacion.py
+# ---------------------------------------------------------------------------
+try:
+    from ML_Exploratorio.config import (
+        PLOT_RF, REPORT_FILE, OUTPUT_DIR,
+        HORIZON_MIN, HORIZON_STEPS, TRAIN_RATIO,
+        RF_N_ESTIMATORS,
+    )
+except ModuleNotFoundError:
+    # Ejecutado como script: añadir la raíz del proyecto al path
+    _RAIZ_CONFIG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _RAIZ_CONFIG not in sys.path:
+        sys.path.insert(0, _RAIZ_CONFIG)
+    from ML_Exploratorio.config import (
+        PLOT_RF, REPORT_FILE, OUTPUT_DIR,
+        HORIZON_MIN, HORIZON_STEPS, TRAIN_RATIO,
+        RF_N_ESTIMATORS,
+    )
 
 # Paleta compartida con Preprocessing/visualizacion.py
 C1 = "#2980B9"
@@ -401,10 +417,10 @@ def _run_visor():
     nb.pack(fill="both", expand=True, padx=8, pady=(0, 4))
 
     PESTANAS = [
-        ("── Fase 1 ──",          None),
+        ("PREPROCESADO",          None),
         ("Preprocessing",         ARCHIVOS["Preprocessing"]),
         ("Reporte Preprocessing", ARCHIVOS["Reporte Preprocessing"]),
-        ("── Fase 3 ──",          None),
+        ("MACHINE LEARNING",          None),
         ("Random Forest",         ARCHIVOS["Random Forest"]),
         ("Reporte ML",            ARCHIVOS["Reporte ML"]),
     ]
