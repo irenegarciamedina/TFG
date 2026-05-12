@@ -1,17 +1,3 @@
-"""
-visualizacion.py — Visualización y visor interactivo de la Fase 3.
-
-Contiene dos responsabilidades:
-  1. generar_dashboard_rf() / escribir_reporte_rf()
-       Llamadas por random_forest.py para producir el PNG y el TXT.
-  2. Visor Tkinter (bloque __main__)
-       Ventana interactiva para explorar todos los outputs del TFG.
-       Uso: python ML_Exploratorio/visualizacion.py
-
-Requisito adicional para el visor:
-    pip install pillow
-"""
-
 import os
 import sys
 import numpy as np
@@ -19,13 +5,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-# ---------------------------------------------------------------------------
-# Import del config compatible con dos contextos de ejecución:
-#   · Como módulo desde la raíz:  from ML_Exploratorio.config import ...
-#   · Como script directamente:   python ML_Exploratorio/visualizacion.py
-# ---------------------------------------------------------------------------
+
 try:
-    from ML_Exploratorio.config import (
+    from ML.config import (
         PLOT_RF, REPORT_FILE, OUTPUT_DIR,
         HORIZON_MIN, HORIZON_STEPS, TRAIN_RATIO,
         RF_N_ESTIMATORS,
@@ -35,13 +17,13 @@ except ModuleNotFoundError:
     _RAIZ_CONFIG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _RAIZ_CONFIG not in sys.path:
         sys.path.insert(0, _RAIZ_CONFIG)
-    from ML_Exploratorio.config import (
+    from ML.config import (
         PLOT_RF, REPORT_FILE, OUTPUT_DIR,
         HORIZON_MIN, HORIZON_STEPS, TRAIN_RATIO,
         RF_N_ESTIMATORS,
     )
 
-# Paleta compartida con Preprocessing/visualizacion.py
+# mismos colores que la visualización del preprocessing
 C1 = "#2980B9"
 C2 = "#E74C3C"
 C3 = "#27AE60"
@@ -52,12 +34,12 @@ C3 = "#27AE60"
 # ===========================================================================
 
 def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
-    """
-    Genera el PNG con 3 subplots:
-      - Ranking de importancia por permutación
-      - Serie temporal real vs. predicho (test)
-      - Dispersión real vs. predicho
-    """
+
+    # 3 gráficas
+    #ranking de importancia por permutación
+    # serie temporal vs lo predicho
+    # dispersión real vs lo predicho
+
     importancias_perm = metricas["importancias_perm"]
     perm_std          = metricas["perm_std"]
     y_test            = metricas["y_test"]
@@ -71,7 +53,8 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     fig = plt.figure(figsize=(16, 14))
     gs  = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.35)
 
-    # ── Subplot 1: importancia por permutación ──────────────────────────────
+    # IMPORTANCIA POR PERMUTACIÓN
+
     ax1    = fig.add_subplot(gs[0, :])
     orden  = importancias_perm.index.tolist()
     vals   = [importancias_perm[f] for f in orden]
@@ -91,7 +74,9 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
         ax1.text(val + 0.0005, bar.get_y() + bar.get_height() / 2,
                  f"{val:.4f}", va="center", fontsize=9)
 
-    # ── Subplot 2: serie temporal real vs. predicho ─────────────────────────
+
+    # SERIE TEMPORAL VS PREDICHO
+
     ax2     = fig.add_subplot(gs[1, 0])
     n_plot  = min(len(y_test), 288 * 2)        # máximo 48 h
     inicio  = int(len(df) * TRAIN_RATIO) + HORIZON_STEPS
@@ -112,7 +97,8 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     ax2.legend(fontsize=8)
     ax2.grid(alpha=0.2)
 
-    # ── Subplot 3: dispersión real vs. predicho ─────────────────────────────
+    # DISPERSIÓN REAL VS PREDICHO
+
     ax3  = fig.add_subplot(gs[1, 1])
     ax3.scatter(y_test, y_pred_test, alpha=0.15, s=8, color=C1)
     lims = [min(y_test.min(), y_pred_test.min()) - 5,
@@ -134,6 +120,8 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     plt.close()
     print(f"\n[RF] Gráfica guardada: {PLOT_RF}")
 
+
+# escritura del reporte
 
 def escribir_reporte_rf(metricas: dict) -> None:
     """Genera el TXT de métricas del Random Forest."""

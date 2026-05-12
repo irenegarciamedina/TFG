@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.inspection import permutation_importance
 
-from ML_Exploratorio.config import (
+from ML.config import (
     INPUT_FILE, PLOT_RF, REPORT_FILE, OUTPUT_DIR,
     GLUCOSE_COL, FEATURES, FEATURES_OPCIONALES,
     HORIZON_STEPS, HORIZON_MIN,
@@ -143,7 +143,7 @@ def ejecutar_random_forest() -> dict:
     # Crear carpeta de salida si no existe
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    from ML_Exploratorio.visualizacion import generar_dashboard_rf, escribir_reporte_rf
+    from ML.visualizacion import generar_dashboard_rf, escribir_reporte_rf
     generar_dashboard_rf(metricas, df)
     escribir_reporte_rf(metricas)
 
