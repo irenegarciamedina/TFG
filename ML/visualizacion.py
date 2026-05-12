@@ -156,7 +156,7 @@ def escribir_reporte_rf(metricas: dict) -> None:
     ]
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    mode = "a" if os.path.exists(REPORT_FILE) else "w"
+    mode = "w" 
     with open(REPORT_FILE, mode, encoding="utf-8") as f:
         f.write("\n".join(lineas) + "\n")
     print(f"[RF] Reporte guardado: {REPORT_FILE}")
@@ -166,7 +166,7 @@ def escribir_reporte_rf(metricas: dict) -> None:
 # 2. VISOR INTERACTIVO TKINTER
 # ===========================================================================
 
-# Raíz del proyecto = carpeta padre de ML_Exploratorio/
+# Raíz del proyecto = carpeta padre de ML
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def _ruta(*partes):
@@ -175,8 +175,8 @@ def _ruta(*partes):
 ARCHIVOS = {
     "Preprocessing":          _ruta("Preprocessing", "output", "Preprocessing.png"),
     "Reporte Preprocessing":  _ruta("Preprocessing", "output", "Preprocessing.txt"),
-    "Random Forest":          _ruta("ML_Exploratorio", "output", "RF_importancia_features.png"),
-    "Reporte ML":             _ruta("ML_Exploratorio", "output", "ML_Exploratorio_reporte.txt"),
+    "Random Forest":          _ruta("ML", "output", "RF_importancia_features.png"),
+    "Reporte ML":             _ruta("ML", "output", "ML_Exploratorio_reporte.txt"),
 }
 
 BG       = "#1E1E2E"

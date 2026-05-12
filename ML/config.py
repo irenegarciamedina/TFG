@@ -7,7 +7,7 @@ import os
 INPUT_FILE    = os.path.join("Datos", "HUPA0001P_preprocessing.csv")
 
 # Salidas de esta fase
-OUTPUT_DIR    = os.path.join("ML_Exploratorio", "output")
+OUTPUT_DIR    = os.path.join("ML", "output")
 PLOT_RF       = os.path.join(OUTPUT_DIR, "RF_importancia_features.png")
 PLOT_SVM      = os.path.join(OUTPUT_DIR, "SVM_clasificacion_caidas.png")
 PLOT_BASELINE = os.path.join(OUTPUT_DIR, "Baseline_comparativa.png")
