@@ -20,7 +20,7 @@ RANKING DE IMPORTANCIA (permutación):
    7. time_dow_cos                 0.00222
    8. time_hour_sin                0.00088
    9. bolus_volume_delivered       0.00002
-  10. carb_input                   -0.00000
+  10. carb_input                   0.00000
   11. time_dow_sin                 -0.00468
   12. steps                        -0.00696
 

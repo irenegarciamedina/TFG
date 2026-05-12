@@ -176,7 +176,7 @@ ARCHIVOS = {
     "Preprocessing":          _ruta("Preprocessing", "output", "Preprocessing.png"),
     "Reporte Preprocessing":  _ruta("Preprocessing", "output", "Preprocessing.txt"),
     "Random Forest":          _ruta("ML", "output", "RF_importancia_features.png"),
-    "Reporte ML":             _ruta("ML", "output", "ML_Exploratorio_reporte.txt"),
+    "Reporte ML":             _ruta("ML", "output", "ML_reporte.txt"),
 }
 
 BG       = "#1E1E2E"
