@@ -117,8 +117,8 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     ax3.grid(alpha=0.2)
 
     plt.suptitle(
-        "Fase 3 — Random Forest · Importancia de Features\n"
-        "TFG: Predicción de glucosa con LSTM — Irene García Medina",
+        "Random Forest · Importancia de Features\n"
+        "TFG: Irene García Medina",
         fontsize=12, fontweight="bold", y=1.01,
     )
     plt.savefig(PLOT_RF, dpi=150, bbox_inches="tight")
@@ -188,7 +188,7 @@ def escribir_reporte_rf(metricas: dict) -> None:
 
     lineas = [
         "=" * 80,
-        "FASE 3 — RANDOM FOREST: RANKING DE IMPORTANCIA DE FEATURES",
+        "RANDOM FOREST: RANKING DE IMPORTANCIA DE FEATURES",
         "=" * 80,
         f"Horizonte de predicción : {HORIZON_MIN} minutos ({HORIZON_STEPS} pasos × 5 min)",
         f"Árboles                 : {RF_N_ESTIMATORS}",
@@ -231,7 +231,7 @@ def escribir_reporte_svm(metricas: dict) -> None:
 
     lineas = [
         "=" * 80,
-        "PASO 9 — SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS",
+        "SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS",
         "=" * 80,
         f"Kernel : {SVM_KERNEL}  |  C = {SVM_C}  |  Gamma = {SVM_GAMMA}",
         f"Umbral hipoglucemia : {HYPO_THRESHOLD} mg/dL",

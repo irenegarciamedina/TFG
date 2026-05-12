@@ -1,6 +1,6 @@
 
 ================================================================================
-REPORTE FASE 1 -- PREPROCESAMIENTO DE LA SEÑAL
+PREPROCESAMIENTO DE LA SEÑAL
 ================================================================================
 Paciente : Datos/HUPA0001P.csv
 Duración : 14 días | 4,096 registros

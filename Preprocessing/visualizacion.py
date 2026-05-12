@@ -99,7 +99,7 @@ def generar_diagnostico(df):
     ax5.set_title(f"Métricas AGP -- GMI: {metricas['gmi']:.2f}% | CV: {metricas['cv']:.1f}%", fontweight="bold", fontsize=9)
     ax5.set_ylim(0, max(valores) + 10)
 
-    plt.suptitle("Fase 1 -- Preprocesamiento de la Señal Glucémica\nTFG: Predicción con LSTM -- Irene García Medina", fontsize=12, fontweight="bold", y=1.02)
+    plt.suptitle("Preprocesamiento de la Señal Glucémica\nTFG: Predicción con LSTM -- Irene García Medina", fontsize=12, fontweight="bold", y=1.02)
     plt.savefig(PLOT_FILE, dpi=150, bbox_inches="tight")
     plt.close()
 
@@ -108,7 +108,7 @@ def generar_diagnostico(df):
     estado_dm = "inestable (CV > 36%)" if metricas["cv"] > 36 else "estable (CV <= 36%)"
     reporte = f"""
 ================================================================================
-REPORTE FASE 1 -- PREPROCESAMIENTO DE LA SEÑAL
+PREPROCESAMIENTO DE LA SEÑAL
 ================================================================================
 Paciente : {INPUT_FILE}
 Duración : {metricas['dias']} días | {len(df):,} registros

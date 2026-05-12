@@ -1,28 +1,27 @@
 ================================================================================
-FASE 3 — RANDOM FOREST: RANKING DE IMPORTANCIA DE FEATURES
+RANDOM FOREST: RANKING DE IMPORTANCIA DE FEATURES
 ================================================================================
 Horizonte de predicción : 40 minutos (8 pasos × 5 min)
 Árboles                 : 300
 División temporal       : 80% train / 19% test
 
 RENDIMIENTO (línea base para comparar con la LSTM):
-  RMSE test  : 37.05 mg/dL
-  MAE  test  : 28.59 mg/dL
-  R²   test  : 0.6308
+  RMSE test  : 37.10 mg/dL
+  MAE  test  : 28.65 mg/dL
+  R²   test  : 0.6297
 
 RANKING DE IMPORTANCIA (permutación):
-   1. glucose                      1.27586
-   2. iob                          0.02523
-   3. time_hour_cos                0.02115
-   4. heart_rate                   0.01750
-   5. basal_rate                   0.00772
-   6. cob                          0.00352
-   7. time_dow_cos                 0.00222
-   8. time_hour_sin                0.00088
-   9. bolus_volume_delivered       0.00002
-  10. carb_input                   0.00000
-  11. time_dow_sin                 -0.00468
-  12. steps                        -0.00696
+   1. glucose                      1.27175
+   2. iob                          0.02634
+   3. heart_rate                   0.02170
+   4. time_hour_cos                0.02087
+   5. basal_rate                   0.00663
+   6. cob                          0.00263
+   7. time_hour_sin                0.00040
+   8. bolus_volume_delivered       0.00002
+   9. carb_input                   0.00000
+  10. time_dow_sin                 -0.00412
+  11. steps                        -0.00633
 
 INTERPRETACIÓN:
   Feature más influyente   : glucose
@@ -32,7 +31,7 @@ INTERPRETACIÓN:
 ================================================================================
 
 ================================================================================
-PASO 9 — SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS
+SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS
 ================================================================================
 Kernel : rbf  |  C = 1.0  |  Gamma = scale
 Umbral hipoglucemia : 70 mg/dL

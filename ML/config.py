@@ -34,23 +34,25 @@ HORIZON_MIN   = HORIZON_STEPS * 5
 # ---------------------------------------------------------------------------
 
 FEATURES = [
-    "glucose",          # glucosa actual
-    "iob",              # insulina activa de FE
-    "cob",              # carbohidratos activos de FE
-    "time_hour_sin",    # ritmo circadiano — componente seno
-    "time_hour_cos",    # ritmo circadiano — componente coseno
-    "time_dow_sin",     # ritmo semanal — componente seno
-    "time_dow_cos",     # ritmo semanal — componente coseno
+    'glucose', 
+    'iob', 
+    'cob', 
+    'heart_rate', 
+    'basal_rate', 
+    'time_hour_cos', 
+    'time_hour_sin',
+    'steps', 
+    'time_dow_sin'
 ]
 
 # Features opcionales (se añaden si existen en el CSV)
 FEATURES_OPCIONALES = [
     "bolus_volume_delivered",   # dosis de bolo registrada
-    "basal_rate",               # tasa basal de insulina
     "carb_input",               # gramos de carbohidratos registrados
-    "heart_rate",               # pulso (si el CSV lo incluye)
-    "steps",                    # pasos (actividad física)
 ]
+
+TARGET = 'glucose_target'
+HORIZONTE = 8  # 40 minutos
 
 # lista que se usará para los modelos
 
