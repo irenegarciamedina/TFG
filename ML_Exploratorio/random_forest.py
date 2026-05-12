@@ -93,29 +93,58 @@ def evaluar(
     print(f"      MAE  test  : {mae_test:.2f}  mg/dL")
     print(f"      R²   test  : {r2_test:.4f}")
 
-    # Importancia por Mean Decrease in Impunity
+    # Importancia por Mean Decrease in Impurity
     importancias_mdi = pd.Series(rf.feature_importances_, index=features).sort_values(ascending=False)
 
-
-    # Importacia por Permutación 
+    # Importancia por Permutación (más robusta que MDI)
     print("\n[RF] Calculando importancia por permutación (puede tardar ~30 s)...")
     perm = permutation_importance(
         rf, X_test, y_test,
         n_repeats=15, random_state=RF_RANDOM_STATE, n_jobs=-1,
     )
     importancias_perm = pd.Series(perm.importances_mean, index=features).sort_values(ascending=False)
-    perm_std = pd.Series(perm.importances_std,  index=features)
+    perm_std          = pd.Series(perm.importances_std,  index=features)
 
     print("\n[RF] Ranking de importancia (permutación — más fiable):")
     for feat, val in importancias_perm.items():
         barra = "█" * int(val * 400)
         print(f"      {feat:<28} {val:.4f}  {barra}")
 
+    return {
+        "rmse_train"        : rmse_train,
+        "rmse_test"         : rmse_test,
+        "mae_test"          : mae_test,
+        "r2_test"           : r2_test,
+        "importancias_perm" : importancias_perm,
+        "importancias_mdi"  : importancias_mdi,
+        "perm_std"          : perm_std,
+        "y_test"            : y_test,
+        "y_pred_test"       : y_pred_test,
+        "features"          : features,
+        "df"                : df,
+    }
+
 def ejecutar_random_forest() -> dict:
     df, features = cargar_datos()
+
+    # Verificar que las features obligatorias existen en el CSV
+    faltantes = [f for f in features if f not in df.columns]
+    if faltantes:
+        print(f"\n[RF] ⚠ Features no encontradas en el CSV, se omiten: {faltantes}")
+        features = [f for f in features if f in df.columns]
+
     X, y = construir_xy(df, features)
     X_train, X_test, y_train, y_test = dividir_temporal(X, y)
     print(f"\n[RF] Muestras — train: {len(X_train):,}  |  test: {len(X_test):,}")
 
-    rf = train_rf(X_train, y_train) 
-    return {"rf_model": rf, "features": features}
+    rf_model = train_rf(X_train, y_train)
+    metricas = evaluar(rf_model, X_train, X_test, y_train, y_test, features, df)
+
+    # Crear carpeta de salida si no existe
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    from ML_Exploratorio.visualizacion import generar_dashboard_rf, escribir_reporte_rf
+    generar_dashboard_rf(metricas, df)
+    escribir_reporte_rf(metricas)
+
+    return {"rf_model": rf_model, "features": features, "metricas": metricas}

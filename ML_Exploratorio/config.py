@@ -4,7 +4,7 @@ import os
 # RUTAS
 # ---------------------------------------------------------------------------
 
-INPUT_FILE    = os.path.join("datos", "HUPA0001P_preprocessing.csv")
+INPUT_FILE    = os.path.join("Datos", "HUPA0001P_preprocessing.csv")
 
 # Salidas de esta fase
 OUTPUT_DIR    = os.path.join("ML_Exploratorio", "output")
