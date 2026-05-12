@@ -20,7 +20,7 @@ RANKING DE IMPORTANCIA (permutación):
    7. time_dow_cos                 0.00222
    8. time_hour_sin                0.00088
    9. bolus_volume_delivered       0.00002
-  10. carb_input                   -0.00000
+  10. carb_input                   0.00000
   11. time_dow_sin                 -0.00468
   12. steps                        -0.00696
 
@@ -29,5 +29,31 @@ INTERPRETACIÓN:
   Feature menos influyente : steps
 
   -> Las features con importancia < 0 no aportan y pueden excluirse de la LSTM.
+================================================================================
+
+================================================================================
+PASO 9 — SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS
+================================================================================
+Kernel : rbf  |  C = 1.0  |  Gamma = scale
+Umbral hipoglucemia : 70 mg/dL
+Umbral caída brusca : -15 mg/dL en 15 min
+
+MÉTRICAS DE CLASIFICACIÓN:
+  AUC-ROC       : 1.000
+  Sensibilidad  : 1.000  (detecta caídas reales)
+  Especificidad : 1.000  (rechaza ruido)
+  Verdaderos Positivos : 1
+  Falsos Negativos     : 0  ← episodios peligrosos perdidos
+  Falsos Positivos     : 0  ← alarmas innecesarias
+
+CLASES:
+  Clase 0 (Ruido)      : 124.0 muestras
+  Clase 1 (Caída real) : 1.0 muestras
+
+INTERPRETACIÓN CLÍNICA:
+  → Un AUC-ROC > 0.85 indica que el modelo discrimina bien entre caídas
+    reales y artefactos de presión.
+  → Los Falsos Negativos son el error más grave (hipoglucemia no detectada).
+    Si FN > 0, considerar reducir el umbral de decisión (threshold < 0.5).
 ================================================================================
 

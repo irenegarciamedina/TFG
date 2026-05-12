@@ -4,13 +4,18 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from sklearn.metrics import ConfusionMatrixDisplay
 
+from ML.config import DROP_STEPS, DROP_THRESHOLD, HYPO_THRESHOLD, PLOT_SVM, SVM_C, SVM_GAMMA, SVM_KERNEL
+from .config import GLUCOSE_COL
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 try:
     from ML.config import (
         PLOT_RF, REPORT_FILE, OUTPUT_DIR,
         HORIZON_MIN, HORIZON_STEPS, TRAIN_RATIO,
-        RF_N_ESTIMATORS,
+        RF_N_ESTIMATORS
     )
 except ModuleNotFoundError:
     # Ejecutado como script: añadir la raíz del proyecto al path
@@ -20,7 +25,7 @@ except ModuleNotFoundError:
     from ML.config import (
         PLOT_RF, REPORT_FILE, OUTPUT_DIR,
         HORIZON_MIN, HORIZON_STEPS, TRAIN_RATIO,
-        RF_N_ESTIMATORS,
+        RF_N_ESTIMATORS,DROP_STEPS, DROP_THRESHOLD, HYPO_THRESHOLD, PLOT_SVM, SVM_C, SVM_GAMMA, SVM_KERNEL
     )
 
 # mismos colores que la visualización del preprocessing
@@ -121,6 +126,60 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     print(f"\n[RF] Gráfica guardada: {PLOT_RF}")
 
 
+def generar_dashboard_svm(metricas: dict, df: pd.DataFrame) -> None:
+    # Extraer variables del diccionario de métricas (IMPORTANTE para que funcione)
+
+    cm = metricas["cm"]
+    fpr = metricas["fpr"]
+    tpr = metricas["tpr"]
+    roc_auc = metricas["roc_auc"]
+    y_prob = metricas["y_prob"]
+    y_test = metricas["y_test"]
+    indices_test = metricas["indices_test"]
+    y_pred = metricas["y_pred"]
+
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    fig = plt.figure(figsize=(16, 12))
+    gs  = gridspec.GridSpec(2, 3, figure=fig, hspace=0.50, wspace=0.35)
+
+    # 1. Matriz de confusión
+    ax1 = fig.add_subplot(gs[0, 0])
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Ruido", "Caída real"])
+    disp.plot(ax=ax1, cmap="Blues", colorbar=False)
+    ax1.set_title("Matriz de confusión", fontweight="bold", fontsize=10)
+
+    # 2. Curva ROC
+    ax2 = fig.add_subplot(gs[0, 1])
+    ax2.plot(fpr, tpr, color=C1, lw=2, label=f"ROC (AUC = {roc_auc:.3f})")
+    ax2.plot([0, 1], [0, 1], "k--", lw=1)
+    ax2.set_title("Curva ROC", fontweight="bold", fontsize=10)
+    ax2.legend(fontsize=8)
+
+    # 3. Distribución (Histograma)
+    ax3 = fig.add_subplot(gs[0, 2])
+    ax3.hist(y_prob[y_test == 0], bins=20, alpha=0.5, color=C3, label="Ruido")
+    ax3.hist(y_prob[y_test == 1], bins=20, alpha=0.5, color=C2, label="Caída Real")
+    ax3.set_title("Distribución de Probabilidades", fontweight="bold", fontsize=10)
+    ax3.legend(fontsize=8)
+
+    # 4. Serie Temporal (Últimos 14 días del test)
+    ax4 = fig.add_subplot(gs[1, :])
+    n_dias = 14
+    fecha_ini = df.index.max() - pd.Timedelta(days=n_dias)
+    df_plot = df.loc[fecha_ini:]
+    ax4.plot(df_plot.index, df_plot[GLUCOSE_COL], color="#A8C8E8", alpha=0.6, label="Glucosa")
+    
+    # Marcadores de eventos
+    for idx, pred, real in zip(indices_test, y_pred, y_test):
+        if idx < fecha_ini: continue
+        color = C2 if (pred == 1 and real == 1) else ("#8E44AD" if real == 1 else "#E67E22")
+        ax4.axvline(idx, color=color, alpha=0.8, lw=1.5 if real == 1 else 0.8)
+
+    plt.savefig(PLOT_SVM, dpi=150, bbox_inches="tight")
+    plt.close()
+
+
 # escritura del reporte
 
 def escribir_reporte_rf(metricas: dict) -> None:
@@ -162,6 +221,49 @@ def escribir_reporte_rf(metricas: dict) -> None:
     print(f"[RF] Reporte guardado: {REPORT_FILE}")
 
 
+def escribir_reporte_svm(metricas: dict) -> None:
+    # Usamos mode="a" para que no borre lo de Random Forest, sino que lo añada al final
+    sensibilidad = metricas["sensibilidad"]
+    cm = metricas["cm"]
+    especificidad = metricas["especificidad"]
+    r = metricas["r"]
+    tn, fp, fn, tp = cm.ravel() if cm.size == 4 else (0,0,0,0)
+
+    lineas = [
+        "=" * 80,
+        "PASO 9 — SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS",
+        "=" * 80,
+        f"Kernel : {SVM_KERNEL}  |  C = {SVM_C}  |  Gamma = {SVM_GAMMA}",
+        f"Umbral hipoglucemia : {HYPO_THRESHOLD} mg/dL",
+       f"Umbral caída brusca : {DROP_THRESHOLD} mg/dL en {DROP_STEPS * 5} min",
+        "",
+        "MÉTRICAS DE CLASIFICACIÓN:",
+        f"  AUC-ROC       : {metricas['roc_auc']:.3f}",
+        f"  Sensibilidad  : {sensibilidad:.3f}  (detecta caídas reales)",
+        f"  Especificidad : {especificidad:.3f}  (rechaza ruido)",
+        f"  Verdaderos Positivos : {tp}",
+        f"  Falsos Negativos     : {fn}  ← episodios peligrosos perdidos",
+        f"  Falsos Positivos     : {fp}  ← alarmas innecesarias",
+        "",
+        "CLASES:",
+        f"  Clase 0 (Ruido)      : {r.get('Ruido', {}).get('support', 'N/A')} muestras",
+        f"  Clase 1 (Caída real) : {r.get('Caída real', {}).get('support', 'N/A')} muestras",
+        "",
+        "INTERPRETACIÓN CLÍNICA:",
+        "  → Un AUC-ROC > 0.85 indica que el modelo discrimina bien entre caídas",
+        "    reales y artefactos de presión.",
+        "  → Los Falsos Negativos son el error más grave (hipoglucemia no detectada).",
+        "    Si FN > 0, considerar reducir el umbral de decisión (threshold < 0.5).",
+        "=" * 80,
+        "",
+    ]
+
+    mode = "a"
+    with open(REPORT_FILE, mode, encoding="utf-8") as f:
+        f.write("\n".join(lineas) + "\n")
+    print(f"[SVM] Reporte actualizado: {REPORT_FILE}")
+
+
 # ===========================================================================
 # 2. VISOR INTERACTIVO TKINTER
 # ===========================================================================
@@ -176,6 +278,7 @@ ARCHIVOS = {
     "Preprocessing":          _ruta("Preprocessing", "output", "Preprocessing.png"),
     "Reporte Preprocessing":  _ruta("Preprocessing", "output", "Preprocessing.txt"),
     "Random Forest":          _ruta("ML", "output", "RF_importancia_features.png"),
+    "SVM":                    _ruta("ML", "output", "SVM_clasificacion.png"), # Añadido
     "Reporte ML":             _ruta("ML", "output", "ML_reporte.txt"),
 }
 
@@ -410,6 +513,7 @@ def _run_visor():
         ("Reporte Preprocessing", ARCHIVOS["Reporte Preprocessing"]),
         ("MACHINE LEARNING",          None),
         ("Random Forest",         ARCHIVOS["Random Forest"]),
+        ("SVM",                   ARCHIVOS["SVM"]),
         ("Reporte ML",            ARCHIVOS["Reporte ML"]),
     ]
 

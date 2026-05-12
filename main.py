@@ -6,6 +6,7 @@ import Preprocessing.visualizacion as visualizacion
 import Feature_Engineering.IOB_insulina_activa as iob
 import Feature_Engineering.COB_carbohidratos_activos as cob
 import ML.random_forest as rf
+import ML.SVM as svm
 from config import OUTPUT_FILE
 
 def preprocessing():
@@ -40,6 +41,9 @@ def preprocessing():
 def ML():
     # random forest
     df = rf.ejecutar_random_forest()
+
+    # SVM
+    df = svm.ejecutar_svm()
 
 if __name__ == "__main__":
     preprocessing()
