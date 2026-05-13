@@ -22,6 +22,7 @@ import Feature_Engineering.IOB_insulina_activa       as iob
 import Feature_Engineering.COB_carbohidratos_activos as cob
 import ML.random_forest as rf
 import ML.SVM           as svm
+import ML.clarke_error_grid as ceg
 
 from config import OUTPUT_FILE_PATTERN, DATOS_DIR
 
@@ -118,8 +119,22 @@ def ejecutar_ml(csv_paths: list):
     ml_cfg.TRAIN_FILES  = train_paths
     ml_cfg.TEST_FILES   = test_paths
 
-    rf.ejecutar_random_forest()
+    resultado_rf = rf.ejecutar_random_forest()
     svm.ejecutar_svm()
+
+    # ---- Clarke Error Grid (evaluación clínica del Random Forest) ----
+    print("\n" + "=" * 68)
+    print("  CLARKE ERROR GRID")
+    print("=" * 68)
+    metricas_rf = resultado_rf.get("metricas", {})
+    y_test_rf   = metricas_rf.get("y_test")
+    y_pred_rf   = metricas_rf.get("y_pred_test")
+
+    if y_test_rf is not None and y_pred_rf is not None:
+        ceg.generar_clarke_error_grid(y_test_rf, y_pred_rf, test_files=test_paths)
+    else:
+        print("[WARN] No se pudieron obtener las predicciones del RF para la CEG.")
+
 
 
 if __name__ == "__main__":
