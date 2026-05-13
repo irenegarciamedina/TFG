@@ -1,81 +1,123 @@
+"""
+ML/random_forest.py
+---------------------------------------------------------------------------
+Random Forest para predicción de glucosa en el horizonte de 40 minutos.
+Ahora carga y concatena todos los ficheros de INPUT_FILES (multi-paciente).
+"""
+
 import os
 import numpy as np
 import pandas as pd
-# import matplotlib.pyplot as plt
-# import matplotlib.gridspec as gridspec
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.inspection import permutation_importance
 
 from ML.config import (
-    INPUT_FILE, PLOT_RF, REPORT_FILE, OUTPUT_DIR,
+    INPUT_FILES, PLOT_RF, REPORT_FILE, OUTPUT_DIR,
     GLUCOSE_COL, FEATURES, FEATURES_OPCIONALES,
     HORIZON_STEPS, HORIZON_MIN,
     RF_N_ESTIMATORS, RF_MAX_DEPTH, RF_MIN_SAMPLES, RF_RANDOM_STATE,
     TRAIN_RATIO,
 )
 
-def cargar_datos() -> pd.DataFrame:
-    print(f"\n[RF] Cargando datos desde: {INPUT_FILE}")
-    df = pd.read_csv(INPUT_FILE, index_col=0, parse_dates=True)
 
-    # añade las features opcionales si estas existen
+# ---------------------------------------------------------------------------
+# CARGA DE DATOS  (uno o varios pacientes)
+# ---------------------------------------------------------------------------
 
+def cargar_datos() -> tuple[pd.DataFrame, list]:
+    """
+    Carga y concatena todos los CSV preprocesados de INPUT_FILES.
+    Añade una columna 'patient_id' para poder distinguirlos si hace falta.
+    """
+    if not INPUT_FILES:
+        raise FileNotFoundError(
+            "No se encontraron ficheros preprocesados. "
+            "Ejecuta primero el preprocesamiento (main.py)."
+        )
+
+    print(f"\n[RF] Cargando {len(INPUT_FILES)} fichero(s)...")
+    frames = []
+    for path in INPUT_FILES:
+        df_p = pd.read_csv(path, index_col=0, parse_dates=True)
+        df_p["patient_id"] = os.path.basename(path).replace("_preprocessing.csv", "")
+        frames.append(df_p)
+        print(f"      -> {os.path.basename(path)}: {len(df_p):,} registros")
+
+    df = pd.concat(frames, ignore_index=False)
+    df = df.sort_index()   # ordenamos por timestamp global
+
+    # Features disponibles (comunes a todos los pacientes)
     features_disponibles = list(FEATURES)
     for col in FEATURES_OPCIONALES:
         if col in df.columns:
             features_disponibles.append(col)
             print(f"      -> Feature opcional encontrada: '{col}' ✓")
 
-    print(f"      -> Features activas ({len(features_disponibles)}): {features_disponibles}")
-    print(f"      -> Registros cargados: {len(df):,}  |  Período: {df.index.min().date()} → {df.index.max().date()}")
+    print(f"\n      -> Total registros : {len(df):,}")
+    print(f"      -> Features activas: {len(features_disponibles)}: {features_disponibles}")
     return df, features_disponibles
 
 
+# ---------------------------------------------------------------------------
+# CONSTRUCCIÓN DE X, y
+# ---------------------------------------------------------------------------
+
 def construir_xy(df: pd.DataFrame, features: list) -> tuple:
-    X = df[features].values[:-HORIZON_STEPS]
-    y = df[GLUCOSE_COL].values[HORIZON_STEPS:]
+    """
+    Construye X e y respetando la separación entre pacientes:
+    el target de cada fila es la glucosa de HORIZON_STEPS pasos después,
+    pero NO cruza el límite entre pacientes distintos.
+    """
+    X_list, y_list = [], []
+    for _, grupo in df.groupby("patient_id", sort=False):
+        g = grupo[GLUCOSE_COL].values
+        feat = grupo[features].values
+        if len(g) <= HORIZON_STEPS:
+            continue
+        X_list.append(feat[:-HORIZON_STEPS])
+        y_list.append(g[HORIZON_STEPS:])
+
+    X = np.vstack(X_list)
+    y = np.concatenate(y_list)
     return X, y
 
-# predice glucosa [t + HORIZON_STEPS] a partir de t
-# forma más directa para evaluar qué variables en el presente predicen la glucosa futura
 
-# df: DataFrame
-# features: columnas usadas como predictores
-# x: np.ndarray shape (m_muestras, n_feautres)
-# y: np.ndarray shape (n_muestras, )
-
+# ---------------------------------------------------------------------------
+# DIVISIÓN TEMPORAL
+# ---------------------------------------------------------------------------
 
 def dividir_temporal(X: np.ndarray, y: np.ndarray) -> tuple:
+    """División temporal global (primeros TRAIN_RATIO% → train)."""
     n_train = int(len(X) * TRAIN_RATIO)
     return X[:n_train], X[n_train:], y[:n_train], y[n_train:]
 
-# división para el train
-# no se usa train_test_split(shuffle=True) porque se trata de una serie temporal
-# si se mezcla se dan fugas de información
-# el modelo varía datos del futuro en el entrenamiento y los resultados no serían realistas
+
+# ---------------------------------------------------------------------------
+# ENTRENAMIENTO
+# ---------------------------------------------------------------------------
 
 def train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
-    print(f"\n[RF] Entrenando Random Forest ({RF_N_ESTIMATORS} árboles)...")
+    print(f"\n[RF] Entrenando Random Forest ({RF_N_ESTIMATORS} árboles, {len(X_train):,} muestras)...")
     rf = RandomForestRegressor(
-        n_estimators  = RF_N_ESTIMATORS,
-        max_depth     = RF_MAX_DEPTH,
+        n_estimators     = RF_N_ESTIMATORS,
+        max_depth        = RF_MAX_DEPTH,
         min_samples_leaf = RF_MIN_SAMPLES,
-        random_state  = RF_RANDOM_STATE,
-        n_jobs        = -1,    # usa todos los núcleos disponibles
+        random_state     = RF_RANDOM_STATE,
+        n_jobs           = -1,
     )
     rf.fit(X_train, y_train)
-    print(f"      -> Entrenamiento completado  |  OOB score: {'N/A (oob_score=False)'}")
+    print("      -> Entrenamiento completado")
     return rf
 
-# parámetros definidos en el MLconfig
+
+# ---------------------------------------------------------------------------
+# EVALUACIÓN
+# ---------------------------------------------------------------------------
 
 def evaluar(
     rf: RandomForestRegressor,
-    X_train: np.ndarray,
-    X_test: np.ndarray,
-    y_train: np.ndarray,
-    y_test: np.ndarray,
+    X_train, X_test, y_train, y_test,
     features: list,
     df: pd.DataFrame,
 ) -> dict:
@@ -87,17 +129,15 @@ def evaluar(
     mae_test   = mean_absolute_error(y_test, y_pred_test)
     r2_test    = r2_score(y_test, y_pred_test)
 
-    print(f"\n[RF] Métricas de rendimiento (horizonte {HORIZON_MIN} min):")
+    print(f"\n[RF] Métricas de rendimiento (horizonte {HORIZON_MIN} min, {len(INPUT_FILES)} pacientes):")
     print(f"      RMSE train : {rmse_train:.2f} mg/dL")
-    print(f"      RMSE test  : {rmse_test:.2f}  mg/dL  ← línea base para la LSTM")
+    print(f"      RMSE test  : {rmse_test:.2f}  mg/dL")
     print(f"      MAE  test  : {mae_test:.2f}  mg/dL")
     print(f"      R²   test  : {r2_test:.4f}")
 
-    # Importancia por Mean Decrease in Impurity
     importancias_mdi = pd.Series(rf.feature_importances_, index=features).sort_values(ascending=False)
 
-    # Importancia por Permutación (más robusta que MDI)
-    print("\n[RF] Calculando importancia por permutación (puede tardar ~30 s)...")
+    print("\n[RF] Calculando importancia por permutación...")
     perm = permutation_importance(
         rf, X_test, y_test,
         n_repeats=15, random_state=RF_RANDOM_STATE, n_jobs=-1,
@@ -105,7 +145,7 @@ def evaluar(
     importancias_perm = pd.Series(perm.importances_mean, index=features).sort_values(ascending=False)
     perm_std          = pd.Series(perm.importances_std,  index=features)
 
-    print("\n[RF] Ranking de importancia (permutación — más fiable):")
+    print("\n[RF] Ranking de importancia (permutación):")
     for feat, val in importancias_perm.items():
         barra = "█" * int(val * 400)
         print(f"      {feat:<28} {val:.4f}  {barra}")
@@ -122,15 +162,20 @@ def evaluar(
         "y_pred_test"       : y_pred_test,
         "features"          : features,
         "df"                : df,
+        "n_pacientes"       : len(INPUT_FILES),
     }
+
+
+# ---------------------------------------------------------------------------
+# ORQUESTADOR
+# ---------------------------------------------------------------------------
 
 def ejecutar_random_forest() -> dict:
     df, features = cargar_datos()
 
-    # Verificar que las features obligatorias existen en el CSV
     faltantes = [f for f in features if f not in df.columns]
     if faltantes:
-        print(f"\n[RF] ⚠ Features no encontradas en el CSV, se omiten: {faltantes}")
+        print(f"\n[RF] ⚠ Features no encontradas, se omiten: {faltantes}")
         features = [f for f in features if f in df.columns]
 
     X, y = construir_xy(df, features)
@@ -140,7 +185,6 @@ def ejecutar_random_forest() -> dict:
     rf_model = train_rf(X_train, y_train)
     metricas = evaluar(rf_model, X_train, X_test, y_train, y_test, features, df)
 
-    # Crear carpeta de salida si no existe
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     from ML.visualizacion import generar_dashboard_rf, escribir_reporte_rf

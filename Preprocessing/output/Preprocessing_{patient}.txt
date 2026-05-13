@@ -1,0 +1,19 @@
+
+================================================================================
+PREPROCESAMIENTO DE LA SEÑAL
+================================================================================
+Paciente : Datos\HUPA0001P.csv
+Duración : 89 días | 25,902 registros
+
+MÉTRICAS CLÍNICAS (AGP):
+    TiR (70-180 mg/dL) :   88.9% (Objetivo >= 70%)
+    TBR (< 70 mg/dL)   :    3.0% (Objetivo < 4%)
+    Media Glucosa      : 128.4 mg/dL
+    Variabilidad (CV)  : 27.5% -> Diabetes estable (CV <= 36%)
+    GMI (HbA1c est.)   : 6.38%
+
+PROCESAMIENTO APLICADO:
+    1. Rango corregido (40-400 mg/dL)
+    2. Suavizado (Ventana móvil 15 min)
+    3. Tiempo cíclico (Sen/Cos 24h y 7 días)
+================================================================================

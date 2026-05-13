@@ -1,10 +1,26 @@
+"""
+ML/config.py
+---------------------------------------------------------------------------
+Configuración de la fase de Machine Learning.
+Ahora soporta múltiples pacientes mediante INPUT_FILES (lista de rutas).
+"""
+
 import os
+import glob
 
 # ---------------------------------------------------------------------------
 # RUTAS
 # ---------------------------------------------------------------------------
 
-INPUT_FILE    = os.path.join("Datos", "HUPA0001P_preprocessing.csv")
+# Lista de ficheros preprocesados.
+# - Se rellena desde main.py cuando se procesan varios pacientes.
+# - Por compatibilidad, si se ejecuta ML directamente se cargan todos los que
+#   existan en la carpeta Datos/.
+_patron_default = os.path.join("Datos", "*_preprocessing.csv")
+INPUT_FILES = sorted(glob.glob(_patron_default))   # puede estar vacía si aún no se ha preprocesado
+
+# Compatibilidad con código antiguo que usaba INPUT_FILE (singular)
+INPUT_FILE = INPUT_FILES[0] if INPUT_FILES else os.path.join("Datos", "HUPA0001P_preprocessing.csv")
 
 # Salidas de esta fase
 OUTPUT_DIR    = os.path.join("ML", "output")
@@ -16,74 +32,57 @@ REPORT_FILE   = os.path.join(OUTPUT_DIR, "ML_reporte.txt")
 # ---------------------------------------------------------------------------
 # COLUMNA OBJETIVO
 # ---------------------------------------------------------------------------
-
-GLUCOSE_COL = "glucose"          # columna de glucosa limpia (misma de fase 1)
+GLUCOSE_COL = "glucose"
 
 # ---------------------------------------------------------------------------
 # HORIZONTE DE PREDICCIÓN
 # ---------------------------------------------------------------------------
-
-HORIZON_STEPS = 8                # 8 × 5 min = 40 minutos
+HORIZON_STEPS = 8          # 8 × 5 min = 40 minutos
 HORIZON_MIN   = HORIZON_STEPS * 5
-
-# como el sensor mide cada 5 minutosy hay 8 pasos, el total es de 40 minutos
-# es el horizonte clínico estándar para las alertas de hipoglucemia 
 
 # ---------------------------------------------------------------------------
 # FEATURES DEL MODELO
 # ---------------------------------------------------------------------------
-
 FEATURES = [
-    'glucose', 
-    'iob', 
-    'cob', 
-    'heart_rate', 
-    'basal_rate', 
-    'time_hour_cos', 
+    'glucose',
+    'iob',
+    'cob',
+    'heart_rate',
+    'basal_rate',
+    'time_hour_cos',
     'time_hour_sin',
-    'steps', 
+    'steps',
     'time_dow_sin'
 ]
 
-# Features opcionales (se añaden si existen en el CSV)
 FEATURES_OPCIONALES = [
-    "bolus_volume_delivered",   # dosis de bolo registrada
-    "carb_input",               # gramos de carbohidratos registrados
+    "bolus_volume_delivered",
+    "carb_input",
 ]
 
-TARGET = 'glucose_target'
-HORIZONTE = 8  # 40 minutos
-
-# lista que se usará para los modelos
+TARGET    = 'glucose_target'
+HORIZONTE = 8
 
 # ---------------------------------------------------------------------------
 # HIPERPARÁMETROS — RANDOM FOREST
 # ---------------------------------------------------------------------------
-
-RF_N_ESTIMATORS  = 300   # cuantos más árboles haya, más estable será pero mas lento también
-RF_MAX_DEPTH     = None  # none para que crezca hasta las hojas más bajas. Es los más adecuado porque hay pocas features
-RF_MIN_SAMPLES   = 10    # mínimo de muestras por hoja. Evita un sobreajuste
-RF_RANDOM_STATE  = 42    # semilla para reproducibilidad
+RF_N_ESTIMATORS  = 300
+RF_MAX_DEPTH     = None
+RF_MIN_SAMPLES   = 10
+RF_RANDOM_STATE  = 42
 
 # ---------------------------------------------------------------------------
 # HIPERPARÁMETROS — SVM
 # ---------------------------------------------------------------------------
+SVM_C      = 1.0
+SVM_KERNEL = "rbf"
+SVM_GAMMA  = "scale"
 
-SVM_C        = 1.0      # parámetro de regularización
-SVM_KERNEL   = "rbf"    # kernel gaussiano (adecuado para datos no lineales)
-SVM_GAMMA    = "scale"  # escala automática según el número de features
-
-# Umbral para clasificar una caída como "hipoglucemia inminente"
-HYPO_THRESHOLD = 70     # mg/dL — criterio ADA/FDA para TBR-1
-
-# Caída brusca: delta de glucosa en 15 min (3 pasos × 5 min)
-DROP_STEPS     = 3      # ventana para calcular la tasa de caída
-DROP_THRESHOLD = -15    # mg/dL en 15 min = caída clínicamente relevante
+HYPO_THRESHOLD = 70      # mg/dL
+DROP_STEPS     = 3
+DROP_THRESHOLD = -15     # mg/dL en 15 min
 
 # ---------------------------------------------------------------------------
-# DIVISIÓN TRAIN / TEST
+# DIVISIÓN TRAIN / TEST  (división temporal, no aleatoria)
 # ---------------------------------------------------------------------------
-# Se usa división temporal (no aleatoria) porque los datos de glucosa son una serie temporal
-# barajar crearía fuga de información del futuro al pasado
-
-TRAIN_RATIO = 0.80      # 80% primeros días → entrenamiento
+TRAIN_RATIO = 0.80

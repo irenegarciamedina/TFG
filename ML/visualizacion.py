@@ -275,8 +275,8 @@ def _ruta(*partes):
     return os.path.join(RAIZ, *partes)
 
 ARCHIVOS = {
-    "Preprocessing":          _ruta("Preprocessing", "output", "Preprocessing.png"),
-    "Reporte Preprocessing":  _ruta("Preprocessing", "output", "Preprocessing.txt"),
+    "Preprocessing":          _ruta("Preprocessing", "output", "Preprocessing_{patient}.png"),
+    "Reporte Preprocessing":  _ruta("Preprocessing", "output", "Preprocessing_{patient}.txt"),
     "Random Forest":          _ruta("ML", "output", "RF_importancia_features.png"),
     "SVM":                    _ruta("ML", "output", "SVM_clasificacion.png"), # Añadido
     "Reporte ML":             _ruta("ML", "output", "ML_reporte.txt"),

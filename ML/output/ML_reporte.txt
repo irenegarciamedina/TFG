@@ -6,26 +6,26 @@ Horizonte de predicción : 40 minutos (8 pasos × 5 min)
 División temporal       : 80% train / 19% test
 
 RENDIMIENTO (línea base para comparar con la LSTM):
-  RMSE test  : 37.10 mg/dL
-  MAE  test  : 28.65 mg/dL
-  R²   test  : 0.6297
+  RMSE test  : 21.10 mg/dL
+  MAE  test  : 15.17 mg/dL
+  R²   test  : 0.7385
 
 RANKING DE IMPORTANCIA (permutación):
-   1. glucose                      1.27175
-   2. iob                          0.02634
-   3. heart_rate                   0.02170
-   4. time_hour_cos                0.02087
-   5. basal_rate                   0.00663
-   6. cob                          0.00263
-   7. time_hour_sin                0.00040
-   8. bolus_volume_delivered       0.00002
-   9. carb_input                   0.00000
-  10. time_dow_sin                 -0.00412
-  11. steps                        -0.00633
+   1. glucose                      1.54571
+   2. iob                          0.01815
+   3. heart_rate                   0.00629
+   4. time_hour_sin                0.00515
+   5. basal_rate                   0.00338
+   6. cob                          0.00316
+   7. time_hour_cos                0.00274
+   8. steps                        0.00260
+   9. time_dow_sin                 0.00014
+  10. bolus_volume_delivered       0.00014
+  11. carb_input                   0.00003
 
 INTERPRETACIÓN:
   Feature más influyente   : glucose
-  Feature menos influyente : steps
+  Feature menos influyente : carb_input
 
   -> Las features con importancia < 0 no aportan y pueden excluirse de la LSTM.
 ================================================================================
@@ -38,16 +38,16 @@ Umbral hipoglucemia : 70 mg/dL
 Umbral caída brusca : -15 mg/dL en 15 min
 
 MÉTRICAS DE CLASIFICACIÓN:
-  AUC-ROC       : 1.000
-  Sensibilidad  : 1.000  (detecta caídas reales)
-  Especificidad : 1.000  (rechaza ruido)
-  Verdaderos Positivos : 1
-  Falsos Negativos     : 0  ← episodios peligrosos perdidos
-  Falsos Positivos     : 0  ← alarmas innecesarias
+  AUC-ROC       : 0.991
+  Sensibilidad  : 0.650  (detecta caídas reales)
+  Especificidad : 0.994  (rechaza ruido)
+  Verdaderos Positivos : 215
+  Falsos Negativos     : 116  ← episodios peligrosos perdidos
+  Falsos Positivos     : 23  ← alarmas innecesarias
 
 CLASES:
-  Clase 0 (Ruido)      : 124.0 muestras
-  Clase 1 (Caída real) : 1.0 muestras
+  Clase 0 (Ruido)      : 3632.0 muestras
+  Clase 1 (Caída real) : 331.0 muestras
 
 INTERPRETACIÓN CLÍNICA:
   → Un AUC-ROC > 0.85 indica que el modelo discrimina bien entre caídas
