@@ -1,32 +1,21 @@
-"""
-main.py — Pipeline completo para todos los pacientes del dataset HUPA-UCM
----------------------------------------------------------------------------
-División:
-  - 20 primeros pacientes (orden alfabético) → entrenamiento
-  -  5 últimos pacientes                     → test independiente
-Uso:
-    python main.py                       # procesa y entrena con todos
-    python main.py Datos/HUPA0001P.csv   # modo compatibilidad (un solo paciente)
-"""
-
 import sys
 import glob
 import os
 
-import Preprocessing.carga          as carga
-import Preprocessing.rango_sensor   as rango_sensor
-import Preprocessing.suavizado      as suavizado
-import Preprocessing.visualizacion  as visualizacion
-import Feature_Engineering.tiempo_ciclico            as tiempo_ciclico
-import Feature_Engineering.IOB_insulina_activa       as iob
+import Preprocessing.carga as carga
+import Preprocessing.rango_sensor as rango_sensor
+import Preprocessing.suavizado as suavizado
+import Preprocessing.visualizacion as visualizacion
+import Feature_Engineering.tiempo_ciclico as tiempo_ciclico
+import Feature_Engineering.IOB_insulina_activa as iob
 import Feature_Engineering.COB_carbohidratos_activos as cob
 import ML.random_forest as rf
-import ML.SVM           as svm
+import ML.SVM as svm
 import ML.clarke_error_grid as ceg
 
 from config import OUTPUT_FILE_PATTERN, DATOS_DIR
 
-# Número de pacientes para entrenamiento (el resto → test)
+# Número de pacientes para entrenamiento. El resto son utilizados para test
 N_TRAIN_PATIENTS = 20
 
 
@@ -39,6 +28,8 @@ def preprocesar_paciente(input_path: str) -> str:
     cfg.INPUT_FILE  = input_path
     cfg.OUTPUT_FILE = input_path.replace(".csv", "_preprocessing.csv")
 
+    patient_id = os.path.splitext(os.path.basename(input_path))[0]
+
     df = carga.cargar_datos(filepath=input_path)
     df = rango_sensor.corregir_rango_sensor(df)
     df = suavizado.suavizar_senal(df)
@@ -47,7 +38,7 @@ def preprocesar_paciente(input_path: str) -> str:
     df = cob.compute_cob(df)
 
     df.to_csv(cfg.OUTPUT_FILE)
-    visualizacion.generar_diagnostico(df)
+    visualizacion.generar_diagnostico(df, patient_id=patient_id)
 
     print(f"  [OK] {os.path.basename(input_path)} -> {cfg.OUTPUT_FILE}\n")
     return cfg.OUTPUT_FILE
@@ -77,7 +68,13 @@ def main():
     print(f"  Test              : {max(0, len(ficheros) - N_TRAIN_PATIENTS)} pacientes")
     print("=" * 68)
 
-    # ---- Preprocesamiento ----
+    # Resetear el reporte acumulado de preprocesamiento para esta ejecución
+    import config as cfg_root
+    os.makedirs(os.path.dirname(cfg_root.REPORT_FILE), exist_ok=True)
+    open(cfg_root.REPORT_FILE, "w").close()
+
+    # PREPROCESAMIENTO
+
     csv_preprocesados = []
     for i, fichero in enumerate(ficheros, 1):
         print(f"\n{'='*68}")
@@ -122,7 +119,7 @@ def ejecutar_ml(csv_paths: list):
     resultado_rf = rf.ejecutar_random_forest()
     svm.ejecutar_svm()
 
-    # ---- Clarke Error Grid (evaluación clínica del Random Forest) ----
+    # Clarke Error Grid (evaluación clínica del Random Forest)
     print("\n" + "=" * 68)
     print("  CLARKE ERROR GRID")
     print("=" * 68)

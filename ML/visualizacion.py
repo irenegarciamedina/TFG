@@ -65,8 +65,7 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     vals   = [importancias_perm[f] for f in orden]
     errs   = [perm_std[f] for f in orden]
     cols   = [C1 if v == max(vals) else ("#E67E22" if v > np.mean(vals) else "#BDC3C7") for v in vals]
-    bars   = ax1.barh(orden[::-1], vals[::-1], xerr=errs[::-1],
-                      color=cols[::-1], capsize=4, alpha=0.85, edgecolor="white")
+    bars   = ax1.barh(orden[::-1], vals[::-1], xerr=errs[::-1], color=cols[::-1], capsize=4, alpha=0.85, edgecolor="white")
     ax1.set_xlabel("Importancia (reducción de RMSE por permutación)")
     ax1.set_title(
         f"Ranking de importancia de variables — Random Forest\n"
@@ -76,8 +75,7 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     ax1.axvline(0, color="gray", lw=0.8, ls="--")
     ax1.grid(axis="x", alpha=0.3)
     for bar, val in zip(bars, vals[::-1]):
-        ax1.text(val + 0.0005, bar.get_y() + bar.get_height() / 2,
-                 f"{val:.4f}", va="center", fontsize=9)
+        ax1.text(val + 0.0005, bar.get_y() + bar.get_height() / 2, f"{val:.4f}", va="center", fontsize=9)
 
 
     # SERIE TEMPORAL VS PREDICHO
@@ -88,8 +86,7 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     idx_test = df.index[inicio : inicio + n_plot]
 
     ax2.plot(idx_test, y_test[:n_plot],      color=C3, lw=1.0, alpha=0.8, label="Real")
-    ax2.plot(idx_test, y_pred_test[:n_plot], color=C2, lw=1.0, alpha=0.8,
-             ls="--", label=f"RF ({HORIZON_MIN} min)")
+    ax2.plot(idx_test, y_pred_test[:n_plot], color=C2, lw=1.0, alpha=0.8, ls="--", label=f"RF ({HORIZON_MIN} min)")
     ax2.axhspan(70, 180, alpha=0.06, color=C3, label="TiR")
     ax2.axhline(70,  color="#E67E22", ls=":", lw=0.8)
     ax2.axhline(180, color="#E67E22", ls=":", lw=0.8)
@@ -226,7 +223,7 @@ def escribir_reporte_svm(metricas: dict) -> None:
     sensibilidad = metricas["sensibilidad"]
     cm = metricas["cm"]
     especificidad = metricas["especificidad"]
-    r = metricas["r"]
+    r = metricas["report"]
     tn, fp, fn, tp = cm.ravel() if cm.size == 4 else (0,0,0,0)
 
     lineas = [
@@ -275,10 +272,10 @@ def _ruta(*partes):
     return os.path.join(RAIZ, *partes)
 
 ARCHIVOS = {
-    "Preprocessing":          _ruta("Preprocessing", "output", "Preprocessing_{patient}.png"),
-    "Reporte Preprocessing":  _ruta("Preprocessing", "output", "Preprocessing_{patient}.txt"),
+    "Preprocessing":  _ruta("Preprocessing", "output", "Preprocessing.txt"),
     "Random Forest":          _ruta("ML", "output", "RF_importancia_features.png"),
-    "SVM":                    _ruta("ML", "output", "SVM_clasificacion.png"), # Añadido
+    "SVM":                    _ruta("ML", "output", "SVM_clasificacion.png"), 
+    "Clarke Error Grid":      _ruta ("ML" "output", "RF_clarke_error_grid.png"),
     "Reporte ML":             _ruta("ML", "output", "ML_reporte.txt"),
 }
 
@@ -328,8 +325,7 @@ class _PestañaImagen:
 
         barra = tk.Frame(parent_frame, bg=BG, pady=6, padx=10)
         barra.pack(fill="x")
-        tk.Label(barra, text=os.path.relpath(ruta_, RAIZ),
-                 font=FONT_SMALL, bg=BG, fg=FG_DIM).pack(side="left")
+        tk.Label(barra, text=os.path.relpath(ruta_, RAIZ), font=FONT_SMALL, bg=BG, fg=FG_DIM).pack(side="left")
 
         def abrir_completa():
             import tkinter as tk
@@ -339,9 +335,7 @@ class _PestañaImagen:
             v.configure(bg=BG)
             img_full = Image.open(ruta_)
             foto = ImageTk.PhotoImage(img_full)
-            c = tk.Canvas(v, bg=BG, highlightthickness=0,
-                          width=min(img_full.width, 1400),
-                          height=min(img_full.height, 900))
+            c = tk.Canvas(v, bg=BG, highlightthickness=0, width=min(img_full.width, 1400), height=min(img_full.height, 900))
             sv = ttk.Scrollbar(v, orient="vertical",   command=c.yview)
             sh = ttk.Scrollbar(v, orient="horizontal", command=c.xview)
             c.configure(yscrollcommand=sv.set, xscrollcommand=sh.set)
@@ -351,10 +345,7 @@ class _PestañaImagen:
             c.configure(scrollregion=c.bbox("all"))
             c._img_ref = foto
 
-        tk.Button(barra, text="🔍  Ver a tamaño completo",
-                  font=FONT_SMALL, bg=ACCENT, fg="white",
-                  relief="flat", padx=10, cursor="hand2",
-                  command=abrir_completa).pack(side="right")
+        tk.Button(barra, text="🔍  Ver a tamaño completo", font=FONT_SMALL, bg=ACCENT, fg="white", relief="flat", padx=10, cursor="hand2", command=abrir_completa).pack(side="right")
 
         cont = tk.Frame(parent_frame, bg=BG)
         cont.pack(fill="both", expand=True)
@@ -387,9 +378,7 @@ def _build_txt_tab(parent_frame, nombre, ruta_):
         marco = tk.Frame(parent_frame, bg=BG_PANEL)
         marco.pack(expand=True)
         tk.Label(marco, text="📄", font=("Helvetica", 48), bg=BG_PANEL, fg=FG_DIM).pack(pady=(40, 8))
-        tk.Label(marco,
-                 text=f"'{nombre}' aún no se ha generado.\n\nEjecuta:\n  python main.py",
-                 font=FONT_SMALL, bg=BG_PANEL, fg=FG_DIM, justify="center").pack()
+        tk.Label(marco, text=f"'{nombre}' aún no se ha generado.\n\nEjecuta:\n  python main.py", font=FONT_SMALL, bg=BG_PANEL, fg=FG_DIM, justify="center").pack()
         return
 
     with open(ruta_, encoding="utf-8") as f:
@@ -399,25 +388,22 @@ def _build_txt_tab(parent_frame, nombre, ruta_):
     barra.pack(fill="x")
     tk.Label(barra, text="Buscar:", font=FONT_SMALL, bg=BG, fg=FG_DIM).pack(side="left")
     var_buscar = tk.StringVar()
-    entrada = tk.Entry(barra, textvariable=var_buscar, font=FONT_SMALL,
-                       bg=BG_PANEL, fg=FG, insertbackground=FG, relief="flat", width=28)
+    entrada = tk.Entry(barra, textvariable=var_buscar, font=FONT_SMALL, bg=BG_PANEL, fg=FG, insertbackground=FG, relief="flat", width=28)
     entrada.pack(side="left", padx=(4, 8))
     lbl_res = tk.Label(barra, text="", font=FONT_SMALL, bg=BG, fg=FG_DIM)
     lbl_res.pack(side="right", padx=8)
-    tk.Button(barra, text="📋 Copiar todo", font=FONT_SMALL, bg=ACCENT2, fg="white",
-              relief="flat", padx=10, cursor="hand2",
-              command=lambda: (parent_frame.clipboard_clear(),
-                               parent_frame.clipboard_append(contenido),
-                               lbl_res.config(text="✓ Copiado", fg=ACCENT2))).pack(side="right")
+    tk.Button(barra, text="📋 Copiar todo", font=FONT_SMALL, bg=ACCENT2, fg="white", relief="flat", padx=10, cursor="hand2", command=lambda: (parent_frame.clipboard_clear(),
+                            parent_frame.clipboard_append(contenido),
+                            lbl_res.config(text="✓ Copiado", fg=ACCENT2))).pack(side="right")
 
     marco_txt = tk.Frame(parent_frame, bg=BG)
     marco_txt.pack(fill="both", expand=True)
     sv = ttk.Scrollbar(marco_txt, orient="vertical")
     sh = ttk.Scrollbar(marco_txt, orient="horizontal")
     txt = tk.Text(marco_txt, font=FONT_NORMAL, bg=BG_PANEL, fg=FG,
-                  insertbackground=FG, selectbackground=ACCENT,
-                  wrap="none", relief="flat", padx=16, pady=12,
-                  yscrollcommand=sv.set, xscrollcommand=sh.set)
+                insertbackground=FG, selectbackground=ACCENT,
+                wrap="none", relief="flat", padx=16, pady=12,
+                yscrollcommand=sv.set, xscrollcommand=sh.set)
     sv.configure(command=txt.yview)
     sh.configure(command=txt.xview)
     sv.pack(side="right", fill="y"); sh.pack(side="bottom", fill="x")
@@ -467,11 +453,11 @@ def _build_txt_tab(parent_frame, nombre, ruta_):
         if primera:
             txt.see(primera)
         lbl_res.config(text=f"{count} resultado{'s' if count != 1 else ''}",
-                       fg=ACCENT2 if count > 0 else FG_ERR)
+                    fg=ACCENT2 if count > 0 else FG_ERR)
 
     tk.Button(barra, text="🔍", font=FONT_SMALL, bg=ACCENT, fg="white",
-              relief="flat", padx=8, cursor="hand2",
-              command=buscar).pack(side="left")
+            relief="flat", padx=8, cursor="hand2",
+            command=buscar).pack(side="left")
     entrada.bind("<Return>", lambda _: buscar())
 
 
@@ -491,8 +477,8 @@ def _run_visor():
     s.configure("TNotebook.Tab", background=BG_TAB, foreground=FG_DIM,
                 padding=[14, 6], font=("Helvetica", 10))
     s.map("TNotebook.Tab",
-          background=[("selected", BG_PANEL)],
-          foreground=[("selected", FG)])
+        background=[("selected", BG_PANEL)],
+        foreground=[("selected", FG)])
     s.configure("TFrame",                  background=BG)
     s.configure("Vertical.TScrollbar",   background=BG_PANEL, troughcolor=BG)
     s.configure("Horizontal.TScrollbar", background=BG_PANEL, troughcolor=BG)
@@ -500,20 +486,20 @@ def _run_visor():
     cab = tk.Frame(root, bg=BG, pady=10, padx=16)
     cab.pack(fill="x")
     tk.Label(cab, text="Resultados del TFG",
-             font=("Helvetica", 16, "bold"), bg=BG, fg=FG).pack(side="left")
+            font=("Helvetica", 16, "bold"), bg=BG, fg=FG).pack(side="left")
     tk.Label(cab, text="Predicción de glucosa con LSTM · HUPA0001P",
-             font=FONT_SMALL, bg=BG, fg=FG_DIM).pack(side="left", padx=16)
+            font=FONT_SMALL, bg=BG, fg=FG_DIM).pack(side="left", padx=16)
 
     nb = ttk.Notebook(root)
     nb.pack(fill="both", expand=True, padx=8, pady=(0, 4))
 
     PESTANAS = [
         ("PREPROCESADO",          None),
-        ("Preprocessing",         ARCHIVOS["Preprocessing"]),
-        ("Reporte Preprocessing", ARCHIVOS["Reporte Preprocessing"]),
+        ("Reporte Preprocessing", ARCHIVOS["Preprocessing"]),
         ("MACHINE LEARNING",          None),
         ("Random Forest",         ARCHIVOS["Random Forest"]),
         ("SVM",                   ARCHIVOS["SVM"]),
+        ("Clarke Error Grid",    ARCHIVOS["Clarke Error Grid"]),
         ("Reporte ML",            ARCHIVOS["Reporte ML"]),
     ]
 
@@ -547,9 +533,9 @@ def _run_visor():
         tk.Label(barra, text="Archivos:", font=FONT_SMALL, bg=BG, fg=FG_DIM).pack(side="left", padx=(0, 10))
         for nombre, existe in _estado_archivos().items():
             tk.Label(barra,
-                     text=("● " if existe else "○ ") + nombre,
-                     font=FONT_SMALL, bg=BG,
-                     fg=ACCENT2 if existe else FG_ERR).pack(side="left", padx=5)
+                    text=("● " if existe else "○ ") + nombre,
+                    font=FONT_SMALL, bg=BG,
+                    fg=ACCENT2 if existe else FG_ERR).pack(side="left", padx=5)
 
         def refrescar():
             for tab_id in nb.tabs():
@@ -558,8 +544,8 @@ def _run_visor():
             dibujar_barra()
 
         tk.Button(barra, text="↺ Refrescar", font=FONT_SMALL, bg=BG_PANEL, fg=FG_DIM,
-                  relief="flat", padx=8, cursor="hand2",
-                  command=refrescar).pack(side="right")
+                relief="flat", padx=8, cursor="hand2",
+                command=refrescar).pack(side="right")
 
     dibujar_barra()
     root.mainloop()

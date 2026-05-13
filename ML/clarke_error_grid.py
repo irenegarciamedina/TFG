@@ -1,51 +1,29 @@
-"""
-ML/clarke_error_grid.py
----------------------------------------------------------------------------
-Clarke Error Grid (CEG) para evaluación clínica de predicciones de glucosa.
+# Clarke Error Grid CEG: Utilizado en evaluaciones clínicas de predicciones de glucosa
 
-Referencia:
-    Clarke et al., "Evaluating Clinical Accuracy of Systems for
-    Self-Monitoring of Blood Glucose", Diabetes Care, 1987.
-
-Zonas:
-    A — Diferencia clínicamente aceptable (< 20 % o ambos en rango hipo)
-    B — Error > 20 % sin consecuencias clínicas relevantes
-    C — Tratamiento corrector innecesario
-    D — Fallo de detección de hipo/hiperglucemia peligrosa
-    E — Tratamiento diametralmente opuesto al necesario
-
-Uso como módulo (desde main.py o random_forest.py):
-    from ML.clarke_error_grid import generar_clarke_error_grid
-    generar_clarke_error_grid(y_real, y_pred, test_files)
-
-Uso como script independiente (requiere haber ejecutado main.py antes):
-    python -m ML.clarke_error_grid
-"""
+# ZONAS:
+# A - Diferencia clínica aceptable: <20% en rango de hipoglucemia
+# B - Error >20% sin consecuencias clínicas muy relevantes
+# C - Tratamiento corrector innecesario
+# D - Fallo en la detección de hipoglucemia o hiperglucemia peligrosa
+# E - Tratamiento opuesto al necesario
 
 import os
-import sys
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-# ---------------------------------------------------------------------------
+
 # CLASIFICACIÓN DE PUNTOS EN ZONAS
-# ---------------------------------------------------------------------------
 
 def clasificar_zonas(y_real: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-    """
-    Asigna cada par (real, predicho) a una zona CEG (A–E).
+    # Asigna cada par (real, predicho) a una zona CEG (A–E).
 
-    Parámetros
-    ----------
-    y_real : array de glucosa real en mg/dL
-    y_pred : array de glucosa predicha en mg/dL
+    #  y_real : array de glucosa real en mg/dL
+    # y_pred : array de glucosa predicha en mg/dL
 
-    Devuelve
-    --------
-    zonas : array de caracteres 'A'–'E', misma longitud que las entradas
-    """
+    # Devuelve
+    # zonas : array de caracteres 'A'–'E', misma longitud que las entradas
+
     n     = len(y_real)
     zonas = np.empty(n, dtype="U1")
 
@@ -53,35 +31,45 @@ def clasificar_zonas(y_real: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
         r = float(y_real[i])
         p = float(y_pred[i])
 
-        # ---- Zona E (tratamiento contraindicado) ----
+        # Zona E - tratamiento contraindicado
         # Hipoglucemia real + predicción de hiperglucemia, o viceversa
+
         if (r <= 70 and p >= 180) or (r >= 180 and p <= 70):
             zonas[i] = "E"
 
-        # ---- Zona A (clínicamente aceptable) ----
-        # Ambos en rango hipo, o diferencia relativa < 20 %
-        elif (r < 70 and p < 70):
-            zonas[i] = "A"
-        elif abs(p - r) / max(r, 1e-6) <= 0.20:
-            zonas[i] = "A"
-
-        # ---- Zona D (fallo de detección) ----
+        # Zona D - fallo de detección
+        # Debe evaluarse ANTES del criterio ±20 % de la zona A, porque un punto
+        # con r=65 y p=78 cumple el ±20 % pero representa un fallo de detección
+        # de hipoglucemia y debe clasificarse como D (Clarke 1987).
         # Real hipo + predicción en rango normal/alto
+
         elif r <= 70 and p > 70 and p <= 180:
             zonas[i] = "D"
         # Real hiperglucemia grave + predicción en rango aceptable
+
         elif r >= 240 and p >= 70 and p <= 180:
             zonas[i] = "D"
 
-        # ---- Zona C (tratamiento innecesario) ----
+        # Zona C - tratamiento innecesario
+        # También debe evaluarse antes del ±20 % de zona A.
         # Glucosa real en rango pero predicción dispara corrección
+
         elif 70 <= r <= 180 and p > r * 1.20 and p >= 180:
             zonas[i] = "C"
         elif 70 <= r <= 180 and p < r * 0.80 and p <= 70:
             zonas[i] = "C"
 
-        # ---- Zona B (error sin consecuencia clínica) ----
+        # Zona A - clínicamente aceptable
+        # Ambos en rango hipo, o diferencia relativa < 20 %
+
+        elif r < 70 and p < 70:
+            zonas[i] = "A"
+        elif abs(p - r) / max(r, 1e-6) <= 0.20:
+            zonas[i] = "A"
+
+        # Zona B - error sin consecuencia clínica
         # Todo lo que está fuera de A pero no llega a C, D, E
+
         else:
             zonas[i] = "B"
 
@@ -95,13 +83,10 @@ def calcular_porcentajes(zonas: np.ndarray) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# GENERACIÓN DE LA FIGURA
+# GENERAR DASHBOARD
 # ---------------------------------------------------------------------------
 
-def _dibujar_ceg(ax, y_real: np.ndarray, y_pred: np.ndarray,
-                 zonas: np.ndarray, pct: dict,
-                 titulo: str, n_pacientes_test: int) -> None:
-    """Dibuja la Clarke Error Grid sobre un Axes de matplotlib."""
+def _dibujar_ceg(ax, y_real: np.ndarray, y_pred: np.ndarray, zonas: np.ndarray, pct: dict, titulo: str, n_pacientes_test: int) -> None:
 
     COL = {
         "A": "#27AE60",   # verde
@@ -120,7 +105,8 @@ def _dibujar_ceg(ax, y_real: np.ndarray, y_pred: np.ndarray,
 
     ax.set_facecolor("#F8F9FA")
 
-    # ---- Banda de zona A (± 20 %) ----
+    # Banda de zona A (± 20 %)
+
     x_ref = np.linspace(0, 400, 400)
     ax.fill_between(x_ref,
                     np.clip(x_ref * 0.80, 0, 400),
@@ -128,10 +114,11 @@ def _dibujar_ceg(ax, y_real: np.ndarray, y_pred: np.ndarray,
                     alpha=0.12, color=BG_COL["A"], zorder=0, label="_nolegend_")
 
     # Zona hipo-hipo (ambos < 70)
+
     ax.fill_between([0, 70], [0, 0], [70, 70],
                     alpha=0.12, color=BG_COL["A"], zorder=0)
 
-    # ---- Líneas de referencia ----
+    # Líneas de referencia
     ax.plot(x_ref, x_ref,        color="black",   lw=1.4, ls="-",  zorder=5)
     ax.plot(x_ref, x_ref * 1.20, color="#555555", lw=0.9, ls="--", zorder=5, label="_nolegend_")
     ax.plot(x_ref, x_ref * 0.80, color="#555555", lw=0.9, ls="--", zorder=5, label="_nolegend_")
@@ -141,7 +128,7 @@ def _dibujar_ceg(ax, y_real: np.ndarray, y_pred: np.ndarray,
         ax.axvline(val, color="#E67E22", lw=0.7, ls=":",  alpha=0.6, zorder=4)
         ax.axhline(val, color="#E67E22", lw=0.7, ls=":",  alpha=0.6, zorder=4)
 
-    # ---- Puntos coloreados por zona ----
+    # Puntos coloreados por zona
     for zona in "ABCDE":
         mask = zonas == zona
         if mask.any():
@@ -152,7 +139,7 @@ def _dibujar_ceg(ax, y_real: np.ndarray, y_pred: np.ndarray,
                 zorder=3,
             )
 
-    # ---- Etiquetas de zona en el gráfico ----
+    # Etiquetas de zona en el gráfico
     etiq_pos = {
         "A": (30,  350), "B": (340, 30),
         "C": (160, 380), "D": (380, 130),
@@ -163,7 +150,7 @@ def _dibujar_ceg(ax, y_real: np.ndarray, y_pred: np.ndarray,
             ax.text(xp, yp, zona, fontsize=14, fontweight="bold",
                     color=COL[zona], alpha=0.6, zorder=6)
 
-    # ---- Decoración ----
+    # Decoración
     ax.set_xlim(0, 400)
     ax.set_ylim(0, 400)
     ax.set_xlabel("Glucosa real (mg/dL)",     fontsize=11)
@@ -198,8 +185,7 @@ def _dibujar_barras(ax, pct: dict) -> None:
         )
 
     # Línea de referencia en 95 % para zona A
-    ax.axhline(95, color="#27AE60", ls="--", lw=1.0, alpha=0.7,
-               label="Objetivo zona A ≥ 95%")
+    ax.axhline(95, color="#27AE60", ls="--", lw=1.0, alpha=0.7, label="Objetivo zona A ≥ 95%")
     ax.set_ylim(0, 110)
     ax.set_xlabel("Zona CEG", fontsize=10)
     ax.set_ylabel("Porcentaje de predicciones (%)", fontsize=10)
@@ -209,28 +195,22 @@ def _dibujar_barras(ax, pct: dict) -> None:
     ax.set_facecolor("#F8F9FA")
 
 
-# ---------------------------------------------------------------------------
 # FUNCIÓN PRINCIPAL EXPORTADA
-# ---------------------------------------------------------------------------
 
 def generar_clarke_error_grid(
     y_real: np.ndarray,
     y_pred: np.ndarray,
     test_files: list = None,
 ) -> dict:
-    """
-    Genera la Clarke Error Grid completa y la guarda en PLOT_CEG.
+    # Genera la Clarke Error Grid completa y la guarda en PLOT_CEG.
 
-    Parámetros
-    ----------
-    y_real      : array de glucosa real (mg/dL), set de test
-    y_pred      : array de glucosa predicha (mg/dL), set de test
-    test_files  : lista de rutas de los ficheros del grupo test (para el título)
+    # y_real      : array de glucosa real (mg/dL), set de test
+    # y_pred      : array de glucosa predicha (mg/dL), set de test
+    # test_files  : lista de rutas de los ficheros del grupo test (para el título)
 
-    Devuelve
-    --------
-    pct : dict con porcentaje en cada zona {'A': x, 'B': x, ...}
-    """
+    # Devuelve
+    # pct : dict con porcentaje en cada zona {'A': x, 'B': x, ...}
+
     from ML.config import PLOT_CEG, OUTPUT_DIR, HORIZON_MIN
 
     y_real = np.asarray(y_real, dtype=float)
@@ -253,7 +233,7 @@ def generar_clarke_error_grid(
         titulo = "Set de test"
         n_test = 0
 
-    # ---- Figura: CEG + barras ----
+    # Figura: CEG + barras
     fig, axes = plt.subplots(1, 2, figsize=(14, 7))
     fig.patch.set_facecolor("white")
 
@@ -282,90 +262,3 @@ def generar_clarke_error_grid(
     print(f"[CEG] Zonas A+B (clínicamente seguras): {ab_pct:.1f}%")
 
     return pct
-
-
-# ---------------------------------------------------------------------------
-# EJECUCIÓN COMO SCRIPT INDEPENDIENTE
-# ---------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    """
-    Modo standalone: carga los ficheros de test ya preprocesados y
-    reconstruye y_real / y_pred a partir del CSV del RF si existe,
-    o genera las predicciones de nuevo.
-
-    Uso:
-        python -m ML.clarke_error_grid
-    """
-    import glob
-
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-    from ML.config import (
-        TEST_FILES, TRAIN_FILES, FEATURES, FEATURES_OPCIONALES,
-        GLUCOSE_COL, HORIZON_STEPS, OUTPUT_DIR,
-        RF_N_ESTIMATORS, RF_MAX_DEPTH, RF_MIN_SAMPLES, RF_RANDOM_STATE,
-    )
-
-    print("=" * 68)
-    print("  Clarke Error Grid — modo standalone")
-    print(f"  Train : {len(TRAIN_FILES)} pacientes")
-    print(f"  Test  : {len(TEST_FILES)}  pacientes")
-    print("=" * 68)
-
-    if not TRAIN_FILES or not TEST_FILES:
-        print("[ERROR] No se encontraron ficheros preprocesados.")
-        print("        Ejecuta primero:  python main.py")
-        sys.exit(1)
-
-    # -- Carga de datos --
-    def _cargar(paths, etiqueta):
-        frames = []
-        for p in paths:
-            df_p = pd.read_csv(p, index_col=0, parse_dates=True)
-            df_p["patient_id"] = os.path.basename(p).replace("_preprocessing.csv", "")
-            frames.append(df_p)
-        df = pd.concat(frames, ignore_index=False)
-        print(f"  {etiqueta}: {len(paths)} pacientes, {len(df):,} registros")
-        return df
-
-    df_train = _cargar(TRAIN_FILES, "Train")
-    df_test  = _cargar(TEST_FILES,  "Test")
-
-    features = [f for f in FEATURES if f in df_train.columns and f in df_test.columns]
-    for col in FEATURES_OPCIONALES:
-        if col in df_train.columns and col in df_test.columns:
-            features.append(col)
-
-    # -- Construcción de X, y --
-    def _construir_xy(df, feats):
-        X_list, y_list = [], []
-        for _, g in df.groupby("patient_id", sort=False):
-            vals = g[GLUCOSE_COL].values
-            feat = g[feats].values
-            if len(vals) <= HORIZON_STEPS:
-                continue
-            X_list.append(feat[:-HORIZON_STEPS])
-            y_list.append(vals[HORIZON_STEPS:])
-        return np.vstack(X_list), np.concatenate(y_list)
-
-    X_train, y_train = _construir_xy(df_train, features)
-    X_test,  y_test  = _construir_xy(df_test,  features)
-
-    print(f"\n  Muestras — train: {len(X_train):,}  |  test: {len(X_test):,}")
-
-    # -- Entrenar RF --
-    from sklearn.ensemble import RandomForestRegressor
-    print(f"\n  Entrenando Random Forest ({RF_N_ESTIMATORS} árboles)...")
-    model = RandomForestRegressor(
-        n_estimators     = RF_N_ESTIMATORS,
-        max_depth        = RF_MAX_DEPTH,
-        min_samples_leaf = RF_MIN_SAMPLES,
-        random_state     = RF_RANDOM_STATE,
-        n_jobs           = -1,
-    )
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-
-    # -- Generar CEG --
-    generar_clarke_error_grid(y_test, y_pred, test_files=TEST_FILES)

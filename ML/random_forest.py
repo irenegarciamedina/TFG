@@ -1,13 +1,6 @@
-"""
-ML/random_forest.py
----------------------------------------------------------------------------
-Random Forest — predicción de glucosa a 40 minutos.
-  · Entrena con TRAIN_FILES (20 pacientes)
-  · Evalúa con TEST_FILES  (5 pacientes nunca vistos)
-
-La Clarke Error Grid se genera en ML/clarke_error_grid.py.
-Se llama desde main.py después de ejecutar este módulo.
-"""
+# Random Forest — predicción de glucosa a 40 minutos.
+# - Entrena con TRAIN_FILES (20 pacientes)
+# - Evalúa con TEST_FILES  (5 pacientes nunca vistos)
 
 import os
 import numpy as np
@@ -25,9 +18,7 @@ from ML.config import (
 )
 
 
-# ---------------------------------------------------------------------------
 # CARGA DE DATOS
-# ---------------------------------------------------------------------------
 
 def _cargar_grupo(paths: list, etiqueta: str) -> tuple:
     if not paths:
@@ -52,9 +43,7 @@ def _cargar_grupo(paths: list, etiqueta: str) -> tuple:
     return df, features_disp
 
 
-# ---------------------------------------------------------------------------
 # CONSTRUCCIÓN DE X, y  (sin cruzar límites entre pacientes)
-# ---------------------------------------------------------------------------
 
 def _construir_xy(df: pd.DataFrame, features: list) -> tuple:
     X_list, y_list = [], []
@@ -68,9 +57,7 @@ def _construir_xy(df: pd.DataFrame, features: list) -> tuple:
     return np.vstack(X_list), np.concatenate(y_list)
 
 
-# ---------------------------------------------------------------------------
 # ENTRENAMIENTO
-# ---------------------------------------------------------------------------
 
 def _train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
     print(f"\n[RF] Entrenando Random Forest ({RF_N_ESTIMATORS} árboles, {len(X_train):,} muestras)...")
@@ -86,9 +73,7 @@ def _train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor
     return model
 
 
-# ---------------------------------------------------------------------------
 # EVALUACIÓN
-# ---------------------------------------------------------------------------
 
 def _evaluar(
     model: RandomForestRegressor,
@@ -104,8 +89,7 @@ def _evaluar(
     mae_test   = mean_absolute_error(y_test, y_pred_test)
     r2_test    = r2_score(y_test, y_pred_test)
 
-    print(f"\n[RF] Métricas (horizonte {HORIZON_MIN} min | "
-          f"train={len(TRAIN_FILES)} pac., test={len(TEST_FILES)} pac.):")
+    print(f"\n[RF] Métricas (horizonte {HORIZON_MIN} min | "f"train={len(TRAIN_FILES)} pac., test={len(TEST_FILES)} pac.):")
     print(f"      RMSE train : {rmse_train:.2f} mg/dL")
     print(f"      RMSE test  : {rmse_test:.2f}  mg/dL")
     print(f"      MAE  test  : {mae_test:.2f}  mg/dL")
@@ -145,9 +129,8 @@ def _evaluar(
     }
 
 
-# ---------------------------------------------------------------------------
-# ORQUESTADOR
-# ---------------------------------------------------------------------------
+
+# PUNTO DE ENTRADA
 
 def ejecutar_random_forest() -> dict:
     df_train, features_train = _cargar_grupo(TRAIN_FILES, "TRAIN")

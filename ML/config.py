@@ -1,17 +1,11 @@
-"""
-ML/config.py
----------------------------------------------------------------------------
-Configuración de la fase de Machine Learning.
-División TRAIN/TEST por paciente: 20 entrenan, 5 evalúan.
-"""
+
+# División TRAIN/TEST por paciente:
+# 20 entrenan, 5 evalúan.
 
 import os
 import glob
 
-# ---------------------------------------------------------------------------
 # RUTAS
-# ---------------------------------------------------------------------------
-
 _patron_default = os.path.join("Datos", "*_preprocessing.csv")
 INPUT_FILES = sorted(glob.glob(_patron_default))
 
@@ -21,7 +15,6 @@ N_TRAIN_PATIENTS = 20
 TRAIN_FILES = INPUT_FILES[:N_TRAIN_PATIENTS]
 TEST_FILES  = INPUT_FILES[N_TRAIN_PATIENTS:]
 
-# Compatibilidad con código antiguo
 INPUT_FILE = INPUT_FILES[0] if INPUT_FILES else os.path.join("Datos", "HUPA0001P_preprocessing.csv")
 
 # Salidas
@@ -89,4 +82,4 @@ DROP_THRESHOLD = -15
 # ---------------------------------------------------------------------------
 # DIVISIÓN TRAIN / TEST
 # ---------------------------------------------------------------------------
-TRAIN_RATIO = 0.80   # mantenido por compatibilidad
+TRAIN_RATIO = 0.80  

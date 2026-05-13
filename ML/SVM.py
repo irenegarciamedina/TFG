@@ -1,22 +1,11 @@
-"""
-ML/SVM.py
----------------------------------------------------------------------------
-SVM para clasificación de caídas bruscas de glucosa.
-Ahora carga todos los ficheros de INPUT_FILES (multi-paciente).
-
-CORRECCIÓN respecto a la versión original:
-- Se usa división TEMPORAL (no aleatoria) para respetar la naturaleza
-  de serie temporal, igual que hace Random Forest.
-"""
+# SVM para clasificación de caídas bruscas de glucosa.
 
 import os
 import numpy as np
 import pandas as pd
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import (
-    classification_report, confusion_matrix, roc_curve, auc
-)
+from sklearn.metrics import (classification_report, confusion_matrix, roc_curve, auc)
 from sklearn.pipeline import Pipeline
 
 from ML.config import (
@@ -28,15 +17,13 @@ from ML.config import (
 )
 
 
-# ---------------------------------------------------------------------------
 # ETIQUETADO DE CAÍDAS BRUSCAS
-# ---------------------------------------------------------------------------
 
 def etiquetar_caidas(df: pd.DataFrame, features: list) -> tuple:
-    """
-    Detecta caídas bruscas dentro de un DataFrame de un único paciente.
-    No se mezclan ventanas entre pacientes.
-    """
+
+    # Detecta caídas bruscas dentro de un DataFrame de un único paciente.
+    # No se mezclan ventanas entre pacientes.
+
     g = df[GLUCOSE_COL].values
     delta_ventana = np.array([
         g[i] - g[max(0, i - DROP_STEPS)] for i in range(len(g))
@@ -57,10 +44,10 @@ def etiquetar_caidas(df: pd.DataFrame, features: list) -> tuple:
 
 
 def etiquetar_todos_pacientes(df_global: pd.DataFrame, features: list) -> tuple:
-    """
-    Llama a etiquetar_caidas para cada paciente por separado y combina.
-    Esto evita que la ventana deslizante cruce el límite entre pacientes.
-    """
+
+    # Llama a etiquetar_caidas para cada paciente por separado y combina.
+    # Esto evita que la ventana deslizante cruce el límite entre pacientes.
+    
     X_total, y_total, idx_total = [], [], []
     for pid, grupo in df_global.groupby("patient_id", sort=False):
         X_p, y_p, idx_p = etiquetar_caidas(grupo, features)
@@ -73,24 +60,19 @@ def etiquetar_todos_pacientes(df_global: pd.DataFrame, features: list) -> tuple:
     return np.vstack(X_total), np.concatenate(y_total), idx_total
 
 
-# ---------------------------------------------------------------------------
 # ENTRENAMIENTO
-# ---------------------------------------------------------------------------
 
 def entrenar_svm(X_train, y_train):
     print(f"\n[SVM] Entrenando SVM (kernel={SVM_KERNEL}, C={SVM_C})...")
     pipeline = Pipeline([
         ("scaler", StandardScaler()),
-        ("svm",    SVC(C=SVM_C, kernel=SVM_KERNEL, gamma=SVM_GAMMA,
-                       probability=True, random_state=42)),
+        ("svm",    SVC(C=SVM_C, kernel=SVM_KERNEL, gamma=SVM_GAMMA, probability=True, random_state=42)),
     ])
     pipeline.fit(X_train, y_train)
     return pipeline
 
 
-# ---------------------------------------------------------------------------
 # EVALUACIÓN
-# ---------------------------------------------------------------------------
 
 def evaluar_svm(pipeline, X_test, y_test) -> dict:
     y_pred = pipeline.predict(X_test)
@@ -102,8 +84,7 @@ def evaluar_svm(pipeline, X_test, y_test) -> dict:
     v_precision = float(tp / (tp + fp)) if (tp + fp) > 0 else 0.0
     v_recall    = float(tp / (tp + fn)) if (tp + fn) > 0 else 0.0
     v_especif   = float(tn / (tn + fp)) if (tn + fp) > 0 else 0.0
-    v_f1        = (2 * v_precision * v_recall / (v_precision + v_recall)
-                   if (v_precision + v_recall) > 0 else 0.0)
+    v_f1        = (2 * v_precision * v_recall / (v_precision + v_recall) if (v_precision + v_recall) > 0 else 0.0)
 
     dict_report = classification_report(
         y_test, y_pred,
@@ -129,15 +110,12 @@ def evaluar_svm(pipeline, X_test, y_test) -> dict:
         "roc_auc"       : roc_auc,
         "sensibilidad"  : v_recall,
         "especificidad" : v_especif,
-        "p"             : v_precision,
+        "precision"     : v_precision,
         "f1"            : v_f1,
-        "r"             :dict_report
     }
 
 
-# ---------------------------------------------------------------------------
-# ORQUESTADOR
-# ---------------------------------------------------------------------------
+# PUNTO DE ENTRADA
 
 def ejecutar_svm() -> dict:
     if not INPUT_FILES:
@@ -170,8 +148,7 @@ def ejecutar_svm() -> dict:
 
     # Comprobación mínima de clases
     if len(np.unique(y_train)) < 2 or len(np.unique(y_test)) < 2:
-        print("[SVM] ⚠ Una de las particiones no tiene ambas clases. "
-              "Considera aumentar el número de pacientes o revisar umbrales.")
+        print("[SVM] Una de las particiones no tiene ambas clases. " "Aumentar el número de pacientes o revisar umbrales.")
         return {}
 
     pipeline = entrenar_svm(X_train, y_train)
