@@ -1,9 +1,12 @@
 """
-main.py  — Pipeline completo para TODOS los pacientes del dataset HUPA-UCM
+main.py — Pipeline completo para todos los pacientes del dataset HUPA-UCM
 ---------------------------------------------------------------------------
+División:
+  - 20 primeros pacientes (orden alfabético) → entrenamiento
+  -  5 últimos pacientes                     → test independiente
 Uso:
-    python main.py                   # procesa todos los pacientes en Datos/
-    python main.py Datos/HUPA0001P.csv   # procesa solo ese fichero (modo anterior)
+    python main.py                       # procesa y entrena con todos
+    python main.py Datos/HUPA0001P.csv   # modo compatibilidad (un solo paciente)
 """
 
 import sys
@@ -14,13 +17,16 @@ import Preprocessing.carga          as carga
 import Preprocessing.rango_sensor   as rango_sensor
 import Preprocessing.suavizado      as suavizado
 import Preprocessing.visualizacion  as visualizacion
-import Feature_Engineering.tiempo_ciclico          as tiempo_ciclico
-import Feature_Engineering.IOB_insulina_activa     as iob
+import Feature_Engineering.tiempo_ciclico            as tiempo_ciclico
+import Feature_Engineering.IOB_insulina_activa       as iob
 import Feature_Engineering.COB_carbohidratos_activos as cob
 import ML.random_forest as rf
 import ML.SVM           as svm
 
 from config import OUTPUT_FILE_PATTERN, DATOS_DIR
+
+# Número de pacientes para entrenamiento (el resto → test)
+N_TRAIN_PATIENTS = 20
 
 
 # ---------------------------------------------------------------------------
@@ -28,11 +34,6 @@ from config import OUTPUT_FILE_PATTERN, DATOS_DIR
 # ---------------------------------------------------------------------------
 
 def preprocesar_paciente(input_path: str) -> str:
-    """
-    Ejecuta el pipeline de preprocesamiento para un fichero CSV.
-    Devuelve la ruta del CSV preprocesado generado.
-    """
-    # Importamos config aquí para que sys.argv no interfiera en el bucle
     import config as cfg
     cfg.INPUT_FILE  = input_path
     cfg.OUTPUT_FILE = input_path.replace(".csv", "_preprocessing.csv")
@@ -57,13 +58,10 @@ def preprocesar_paciente(input_path: str) -> str:
 
 def main():
 
-    # ---- Decidir qué ficheros procesar ----
     if len(sys.argv) > 1:
-        # Modo compatibilidad: se pasa un fichero concreto
         ficheros = [sys.argv[1]]
     else:
-        # Modo completo: todos los CSV de la carpeta Datos/ (excluye los ya preprocesados)
-        patron = os.path.join(DATOS_DIR, "HUPA*.csv")
+        patron   = os.path.join(DATOS_DIR, "HUPA*.csv")
         ficheros = sorted([
             f for f in glob.glob(patron)
             if "_preprocessing" not in f
@@ -73,12 +71,12 @@ def main():
             sys.exit(1)
 
     print("=" * 68)
-    print(f"  Pacientes a procesar: {len(ficheros)}")
-    for f in ficheros:
-        print(f"    - {os.path.basename(f)}")
+    print(f"  Pacientes totales : {len(ficheros)}")
+    print(f"  Train             : {min(N_TRAIN_PATIENTS, len(ficheros))} pacientes")
+    print(f"  Test              : {max(0, len(ficheros) - N_TRAIN_PATIENTS)} pacientes")
     print("=" * 68)
 
-    # ---- Preprocesamiento de cada paciente ----
+    # ---- Preprocesamiento ----
     csv_preprocesados = []
     for i, fichero in enumerate(ficheros, 1):
         print(f"\n{'='*68}")
@@ -92,7 +90,6 @@ def main():
 
     print(f"\n[INFO] Preprocesamiento completado: {len(csv_preprocesados)}/{len(ficheros)} pacientes OK")
 
-    # ---- Fase ML sobre el conjunto combinado ----
     if not csv_preprocesados:
         print("[ERROR] Ningún fichero preprocesado disponible. Abortando ML.")
         sys.exit(1)
@@ -101,20 +98,25 @@ def main():
 
 
 # ---------------------------------------------------------------------------
-# FASE ML
+# FASE ML  —  división 20 train / 5 test por paciente
 # ---------------------------------------------------------------------------
 
 def ejecutar_ml(csv_paths: list):
-    """
-    Entrena Random Forest y SVM combinando todos los CSV preprocesados.
-    """
+    import ML.config as ml_cfg
+
+    train_paths = csv_paths[:N_TRAIN_PATIENTS]
+    test_paths  = csv_paths[N_TRAIN_PATIENTS:]
+
     print("\n" + "=" * 68)
-    print(f"  FASE ML — {len(csv_paths)} paciente(s)")
+    print(f"  FASE ML")
+    print(f"  Train : {len(train_paths)} pacientes -> {[os.path.basename(p) for p in train_paths]}")
+    print(f"  Test  : {len(test_paths)}  pacientes -> {[os.path.basename(p) for p in test_paths]}")
     print("=" * 68)
 
-    # Actualizamos el config de ML para que apunte a la lista de ficheros
-    import ML.config as ml_cfg
-    ml_cfg.INPUT_FILES = csv_paths   # nueva variable (ver ML/config.py)
+    # Actualizamos el config de ML
+    ml_cfg.INPUT_FILES  = csv_paths
+    ml_cfg.TRAIN_FILES  = train_paths
+    ml_cfg.TEST_FILES   = test_paths
 
     rf.ejecutar_random_forest()
     svm.ejecutar_svm()

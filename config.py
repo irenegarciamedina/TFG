@@ -27,8 +27,8 @@ OUTPUT_FILE_PATTERN = os.path.join(DATOS_DIR, "{patient}_preprocessing.csv")
 # RUTAS DE SALIDA DEL PREPROCESAMIENTO
 # Ahora incluyen el nombre del paciente para no sobrescribirse entre pacientes.
 # ---------------------------------------------------------------------------
-REPORT_FILE = os.path.join("Preprocessing", "output", "Preprocessing_{patient}.txt")
-PLOT_FILE   = os.path.join("Preprocessing", "output", "Preprocessing_{patient}.png")
+REPORT_FILE = os.path.join("Preprocessing", "output", "Preprocessing.txt")
+PLOT_FILE   = os.path.join("Preprocessing", "output", "Preprocessing.png")
 
 # ---------------------------------------------------------------------------
 # COLUMNAS DEL DATASET HUPA-UCM

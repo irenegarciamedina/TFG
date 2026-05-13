@@ -6,26 +6,26 @@ Horizonte de predicción : 40 minutos (8 pasos × 5 min)
 División temporal       : 80% train / 19% test
 
 RENDIMIENTO (línea base para comparar con la LSTM):
-  RMSE test  : 21.10 mg/dL
-  MAE  test  : 15.17 mg/dL
-  R²   test  : 0.7385
+  RMSE test  : 24.08 mg/dL
+  MAE  test  : 17.96 mg/dL
+  R²   test  : 0.7820
 
 RANKING DE IMPORTANCIA (permutación):
-   1. glucose                      1.54571
-   2. iob                          0.01815
-   3. heart_rate                   0.00629
-   4. time_hour_sin                0.00515
-   5. basal_rate                   0.00338
-   6. cob                          0.00316
-   7. time_hour_cos                0.00274
-   8. steps                        0.00260
-   9. time_dow_sin                 0.00014
-  10. bolus_volume_delivered       0.00014
-  11. carb_input                   0.00003
+   1. glucose                      1.59240
+   2. iob                          0.02262
+   3. heart_rate                   0.00881
+   4. basal_rate                   0.00260
+   5. time_dow_sin                 0.00057
+   6. steps                        0.00022
+   7. cob                          0.00007
+   8. carb_input                   -0.00003
+   9. time_hour_sin                -0.00004
+  10. bolus_volume_delivered       -0.00005
+  11. time_hour_cos                -0.00097
 
 INTERPRETACIÓN:
   Feature más influyente   : glucose
-  Feature menos influyente : carb_input
+  Feature menos influyente : time_hour_cos
 
   -> Las features con importancia < 0 no aportan y pueden excluirse de la LSTM.
 ================================================================================

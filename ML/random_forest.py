@@ -1,8 +1,12 @@
 """
 ML/random_forest.py
 ---------------------------------------------------------------------------
-Random Forest para predicción de glucosa en el horizonte de 40 minutos.
-Ahora carga y concatena todos los ficheros de INPUT_FILES (multi-paciente).
+Random Forest — predicción de glucosa a 40 minutos.
+  · Entrena con TRAIN_FILES (20 pacientes)
+  · Evalúa con TEST_FILES  (5 pacientes nunca vistos)
+
+La Clarke Error Grid se genera en ML/clarke_error_grid.py.
+Se llama desde main.py después de ejecutar este módulo.
 """
 
 import os
@@ -13,133 +17,107 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.inspection import permutation_importance
 
 from ML.config import (
-    INPUT_FILES, PLOT_RF, REPORT_FILE, OUTPUT_DIR,
+    TRAIN_FILES, TEST_FILES,
+    PLOT_RF, REPORT_FILE, OUTPUT_DIR,
     GLUCOSE_COL, FEATURES, FEATURES_OPCIONALES,
     HORIZON_STEPS, HORIZON_MIN,
     RF_N_ESTIMATORS, RF_MAX_DEPTH, RF_MIN_SAMPLES, RF_RANDOM_STATE,
-    TRAIN_RATIO,
 )
 
 
 # ---------------------------------------------------------------------------
-# CARGA DE DATOS  (uno o varios pacientes)
+# CARGA DE DATOS
 # ---------------------------------------------------------------------------
 
-def cargar_datos() -> tuple[pd.DataFrame, list]:
-    """
-    Carga y concatena todos los CSV preprocesados de INPUT_FILES.
-    Añade una columna 'patient_id' para poder distinguirlos si hace falta.
-    """
-    if not INPUT_FILES:
-        raise FileNotFoundError(
-            "No se encontraron ficheros preprocesados. "
-            "Ejecuta primero el preprocesamiento (main.py)."
-        )
+def _cargar_grupo(paths: list, etiqueta: str) -> tuple:
+    if not paths:
+        raise FileNotFoundError(f"No hay ficheros para el grupo '{etiqueta}'.")
 
-    print(f"\n[RF] Cargando {len(INPUT_FILES)} fichero(s)...")
+    print(f"\n[RF] Cargando {len(paths)} fichero(s) de {etiqueta}...")
     frames = []
-    for path in INPUT_FILES:
+    for path in paths:
         df_p = pd.read_csv(path, index_col=0, parse_dates=True)
         df_p["patient_id"] = os.path.basename(path).replace("_preprocessing.csv", "")
         frames.append(df_p)
         print(f"      -> {os.path.basename(path)}: {len(df_p):,} registros")
 
     df = pd.concat(frames, ignore_index=False)
-    df = df.sort_index()   # ordenamos por timestamp global
 
-    # Features disponibles (comunes a todos los pacientes)
-    features_disponibles = list(FEATURES)
+    features_disp = list(FEATURES)
     for col in FEATURES_OPCIONALES:
         if col in df.columns:
-            features_disponibles.append(col)
-            print(f"      -> Feature opcional encontrada: '{col}' ✓")
+            features_disp.append(col)
 
-    print(f"\n      -> Total registros : {len(df):,}")
-    print(f"      -> Features activas: {len(features_disponibles)}: {features_disponibles}")
-    return df, features_disponibles
+    print(f"      -> Total {etiqueta}: {len(df):,} registros | features: {len(features_disp)}")
+    return df, features_disp
 
 
 # ---------------------------------------------------------------------------
-# CONSTRUCCIÓN DE X, y
+# CONSTRUCCIÓN DE X, y  (sin cruzar límites entre pacientes)
 # ---------------------------------------------------------------------------
 
-def construir_xy(df: pd.DataFrame, features: list) -> tuple:
-    """
-    Construye X e y respetando la separación entre pacientes:
-    el target de cada fila es la glucosa de HORIZON_STEPS pasos después,
-    pero NO cruza el límite entre pacientes distintos.
-    """
+def _construir_xy(df: pd.DataFrame, features: list) -> tuple:
     X_list, y_list = [], []
     for _, grupo in df.groupby("patient_id", sort=False):
-        g = grupo[GLUCOSE_COL].values
+        g    = grupo[GLUCOSE_COL].values
         feat = grupo[features].values
         if len(g) <= HORIZON_STEPS:
             continue
         X_list.append(feat[:-HORIZON_STEPS])
         y_list.append(g[HORIZON_STEPS:])
-
-    X = np.vstack(X_list)
-    y = np.concatenate(y_list)
-    return X, y
-
-
-# ---------------------------------------------------------------------------
-# DIVISIÓN TEMPORAL
-# ---------------------------------------------------------------------------
-
-def dividir_temporal(X: np.ndarray, y: np.ndarray) -> tuple:
-    """División temporal global (primeros TRAIN_RATIO% → train)."""
-    n_train = int(len(X) * TRAIN_RATIO)
-    return X[:n_train], X[n_train:], y[:n_train], y[n_train:]
+    return np.vstack(X_list), np.concatenate(y_list)
 
 
 # ---------------------------------------------------------------------------
 # ENTRENAMIENTO
 # ---------------------------------------------------------------------------
 
-def train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
+def _train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
     print(f"\n[RF] Entrenando Random Forest ({RF_N_ESTIMATORS} árboles, {len(X_train):,} muestras)...")
-    rf = RandomForestRegressor(
+    model = RandomForestRegressor(
         n_estimators     = RF_N_ESTIMATORS,
         max_depth        = RF_MAX_DEPTH,
         min_samples_leaf = RF_MIN_SAMPLES,
         random_state     = RF_RANDOM_STATE,
         n_jobs           = -1,
     )
-    rf.fit(X_train, y_train)
+    model.fit(X_train, y_train)
     print("      -> Entrenamiento completado")
-    return rf
+    return model
 
 
 # ---------------------------------------------------------------------------
 # EVALUACIÓN
 # ---------------------------------------------------------------------------
 
-def evaluar(
-    rf: RandomForestRegressor,
+def _evaluar(
+    model: RandomForestRegressor,
     X_train, X_test, y_train, y_test,
     features: list,
-    df: pd.DataFrame,
+    df_test: pd.DataFrame,
 ) -> dict:
-    y_pred_train = rf.predict(X_train)
-    y_pred_test  = rf.predict(X_test)
+    y_pred_train = model.predict(X_train)
+    y_pred_test  = model.predict(X_test)
 
     rmse_train = np.sqrt(mean_squared_error(y_train, y_pred_train))
-    rmse_test  = np.sqrt(mean_squared_error(y_test, y_pred_test))
+    rmse_test  = np.sqrt(mean_squared_error(y_test,  y_pred_test))
     mae_test   = mean_absolute_error(y_test, y_pred_test)
     r2_test    = r2_score(y_test, y_pred_test)
 
-    print(f"\n[RF] Métricas de rendimiento (horizonte {HORIZON_MIN} min, {len(INPUT_FILES)} pacientes):")
+    print(f"\n[RF] Métricas (horizonte {HORIZON_MIN} min | "
+          f"train={len(TRAIN_FILES)} pac., test={len(TEST_FILES)} pac.):")
     print(f"      RMSE train : {rmse_train:.2f} mg/dL")
     print(f"      RMSE test  : {rmse_test:.2f}  mg/dL")
     print(f"      MAE  test  : {mae_test:.2f}  mg/dL")
     print(f"      R²   test  : {r2_test:.4f}")
 
-    importancias_mdi = pd.Series(rf.feature_importances_, index=features).sort_values(ascending=False)
+    importancias_mdi = pd.Series(
+        model.feature_importances_, index=features
+    ).sort_values(ascending=False)
 
-    print("\n[RF] Calculando importancia por permutación...")
+    print("\n[RF] Calculando importancia por permutación (puede tardar ~30 s)...")
     perm = permutation_importance(
-        rf, X_test, y_test,
+        model, X_test, y_test,
         n_repeats=15, random_state=RF_RANDOM_STATE, n_jobs=-1,
     )
     importancias_perm = pd.Series(perm.importances_mean, index=features).sort_values(ascending=False)
@@ -161,8 +139,9 @@ def evaluar(
         "y_test"            : y_test,
         "y_pred_test"       : y_pred_test,
         "features"          : features,
-        "df"                : df,
-        "n_pacientes"       : len(INPUT_FILES),
+        "df"                : df_test,
+        "n_train_pacientes" : len(TRAIN_FILES),
+        "n_test_pacientes"  : len(TEST_FILES),
     }
 
 
@@ -171,24 +150,27 @@ def evaluar(
 # ---------------------------------------------------------------------------
 
 def ejecutar_random_forest() -> dict:
-    df, features = cargar_datos()
+    df_train, features_train = _cargar_grupo(TRAIN_FILES, "TRAIN")
+    df_test,  features_test  = _cargar_grupo(TEST_FILES,  "TEST")
 
-    faltantes = [f for f in features if f not in df.columns]
+    # Usar solo features presentes en ambos grupos
+    features = [f for f in features_train if f in df_test.columns]
+    faltantes = [f for f in FEATURES if f not in features]
     if faltantes:
-        print(f"\n[RF] ⚠ Features no encontradas, se omiten: {faltantes}")
-        features = [f for f in features if f in df.columns]
+        print(f"\n[RF] ⚠ Features ausentes en algún grupo, omitidas: {faltantes}")
 
-    X, y = construir_xy(df, features)
-    X_train, X_test, y_train, y_test = dividir_temporal(X, y)
+    X_train, y_train = _construir_xy(df_train, features)
+    X_test,  y_test  = _construir_xy(df_test,  features)
+
     print(f"\n[RF] Muestras — train: {len(X_train):,}  |  test: {len(X_test):,}")
 
-    rf_model = train_rf(X_train, y_train)
-    metricas = evaluar(rf_model, X_train, X_test, y_train, y_test, features, df)
+    rf_model = _train_rf(X_train, y_train)
+    metricas = _evaluar(rf_model, X_train, X_test, y_train, y_test, features, df_test)
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     from ML.visualizacion import generar_dashboard_rf, escribir_reporte_rf
-    generar_dashboard_rf(metricas, df)
+    generar_dashboard_rf(metricas, df_test)
     escribir_reporte_rf(metricas)
 
     return {"rf_model": rf_model, "features": features, "metricas": metricas}
