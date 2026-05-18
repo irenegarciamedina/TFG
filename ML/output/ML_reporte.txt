@@ -6,22 +6,22 @@ Horizonte de predicción : 40 minutos (8 pasos × 5 min)
 División temporal       : 80% train / 19% test
 
 RENDIMIENTO (línea base para comparar con la LSTM):
-  RMSE test  : 24.08 mg/dL
-  MAE  test  : 17.96 mg/dL
-  R²   test  : 0.7820
+  RMSE test  : 24.06 mg/dL
+  MAE  test  : 17.94 mg/dL
+  R²   test  : 0.7823
 
 RANKING DE IMPORTANCIA (permutación):
-   1. glucose                      1.59240
-   2. iob                          0.02262
-   3. heart_rate                   0.00881
+   1. glucose                      1.59242
+   2. iob                          0.02263
+   3. heart_rate                   0.00873
    4. basal_rate                   0.00260
    5. time_dow_sin                 0.00057
-   6. steps                        0.00022
-   7. cob                          0.00007
-   8. carb_input                   -0.00003
-   9. time_hour_sin                -0.00004
+   6. steps                        0.00024
+   7. cob                          0.00010
+   8. time_hour_sin                0.00003
+   9. carb_input                   -0.00003
   10. bolus_volume_delivered       -0.00005
-  11. time_hour_cos                -0.00097
+  11. time_hour_cos                -0.00092
 
 INTERPRETACIÓN:
   Feature más influyente   : glucose
@@ -38,16 +38,16 @@ Umbral hipoglucemia : 70 mg/dL
 Umbral caída brusca : -15 mg/dL en 15 min
 
 MÉTRICAS DE CLASIFICACIÓN:
-  AUC-ROC       : 0.991
-  Sensibilidad  : 0.650  (detecta caídas reales)
-  Especificidad : 0.994  (rechaza ruido)
-  Verdaderos Positivos : 215
-  Falsos Negativos     : 116  ← episodios peligrosos perdidos
-  Falsos Positivos     : 23  ← alarmas innecesarias
+  AUC-ROC       : 0.990
+  Sensibilidad  : 0.958  (detecta caídas reales)
+  Especificidad : 0.951  (rechaza ruido)
+  Verdaderos Positivos : 1105
+  Falsos Negativos     : 48  ← episodios peligrosos perdidos
+  Falsos Positivos     : 910  ← alarmas innecesarias
 
 CLASES:
-  Clase 0 (Ruido)      : 3632.0 muestras
-  Clase 1 (Caída real) : 331.0 muestras
+  Clase 0 (Ruido)      : 18638.0 muestras
+  Clase 1 (Caída real) : 1153.0 muestras
 
 INTERPRETACIÓN CLÍNICA:
   → Un AUC-ROC > 0.85 indica que el modelo discrimina bien entre caídas

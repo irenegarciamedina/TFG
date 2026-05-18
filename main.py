@@ -20,15 +20,13 @@ N_TRAIN_PATIENTS = 20
 
 
 # ---------------------------------------------------------------------------
-# PREPROCESAMIENTO DE UN ÚNICO PACIENTE
+# PREPROCESAMIENTO
 # ---------------------------------------------------------------------------
 
 def preprocesar_paciente(input_path: str) -> str:
-    import config as cfg
-    cfg.INPUT_FILE  = input_path
-    cfg.OUTPUT_FILE = input_path.replace(".csv", "_preprocessing.csv")
-
-    patient_id = os.path.splitext(os.path.basename(input_path))[0]
+    
+    output_path = input_path.replace(".csv", "_preprocessing.csv")
+    patient_id  = os.path.splitext(os.path.basename(input_path))[0]
 
     df = carga.cargar_datos(filepath=input_path)
     df = rango_sensor.corregir_rango_sensor(df)
@@ -37,11 +35,11 @@ def preprocesar_paciente(input_path: str) -> str:
     df = iob.compute_iob(df)
     df = cob.compute_cob(df)
 
-    df.to_csv(cfg.OUTPUT_FILE)
+    df.to_csv(output_path)
     visualizacion.generar_diagnostico(df, patient_id=patient_id)
 
-    print(f"  [OK] {os.path.basename(input_path)} -> {cfg.OUTPUT_FILE}\n")
-    return cfg.OUTPUT_FILE
+    print(f"  [OK] {os.path.basename(input_path)} -> {output_path}\n")
+    return output_path
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +118,7 @@ def ejecutar_ml(csv_paths: list):
     svm.ejecutar_svm()
 
     # Clarke Error Grid (evaluación clínica del Random Forest)
+
     print("\n" + "=" * 68)
     print("  CLARKE ERROR GRID")
     print("=" * 68)

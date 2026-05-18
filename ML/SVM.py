@@ -1,4 +1,5 @@
 # SVM para clasificación de caídas bruscas de glucosa.
+# Validación: Leave-One-Patient-Out (LOPO) — el estándar en datos clínicos.
 
 import os
 import numpy as np
@@ -13,16 +14,16 @@ from ML.config import (
     GLUCOSE_COL, FEATURES, FEATURES_OPCIONALES,
     HYPO_THRESHOLD, DROP_STEPS, DROP_THRESHOLD,
     SVM_C, SVM_KERNEL, SVM_GAMMA,
-    TRAIN_RATIO,
 )
 
 
+# ---------------------------------------------------------------------------
 # ETIQUETADO DE CAÍDAS BRUSCAS
+# ---------------------------------------------------------------------------
 
 def etiquetar_caidas(df: pd.DataFrame, features: list) -> tuple:
-
-    # Detecta caídas bruscas dentro de un DataFrame de un único paciente.
-    # No se mezclan ventanas entre pacientes.
+    """Detecta caídas bruscas dentro de un DataFrame de un único paciente.
+    No se mezclan ventanas entre pacientes."""
 
     g = df[GLUCOSE_COL].values
     delta_ventana = np.array([
@@ -44,40 +45,95 @@ def etiquetar_caidas(df: pd.DataFrame, features: list) -> tuple:
 
 
 def etiquetar_todos_pacientes(df_global: pd.DataFrame, features: list) -> tuple:
-
-    # Llama a etiquetar_caidas para cada paciente por separado y combina.
-    # Esto evita que la ventana deslizante cruce el límite entre pacientes.
-    
-    X_total, y_total, idx_total = [], [], []
+    """Llama a etiquetar_caidas para cada paciente por separado y combina.
+    Devuelve también el mapping paciente -> índices de sus eventos."""
+    X_total, y_total, idx_total, pac_ids = [], [], [], []
     for pid, grupo in df_global.groupby("patient_id", sort=False):
         X_p, y_p, idx_p = etiquetar_caidas(grupo, features)
         if len(X_p) > 0:
             X_total.append(X_p)
             y_total.append(y_p)
             idx_total.extend(idx_p)
+            pac_ids.extend([pid] * len(X_p))
     if not X_total:
-        return np.array([]), np.array([]), []
-    return np.vstack(X_total), np.concatenate(y_total), idx_total
+        return np.array([]), np.array([]), [], np.array([])
+    return (
+        np.vstack(X_total),
+        np.concatenate(y_total),
+        idx_total,
+        np.array(pac_ids),
+    )
 
 
-# ENTRENAMIENTO
+# ---------------------------------------------------------------------------
+# VALIDACIÓN LEAVE-ONE-PATIENT-OUT (LOPO)
+# ---------------------------------------------------------------------------
 
-def entrenar_svm(X_train, y_train):
-    print(f"\n[SVM] Entrenando SVM (kernel={SVM_KERNEL}, C={SVM_C})...")
-    pipeline = Pipeline([
-        ("scaler", StandardScaler()),
-        ("svm",    SVC(C=SVM_C, kernel=SVM_KERNEL, gamma=SVM_GAMMA, probability=True, random_state=42)),
-    ])
-    pipeline.fit(X_train, y_train)
-    return pipeline
+def _lopo_cv(X: np.ndarray, y: np.ndarray, pac_ids: np.ndarray) -> dict:
+    # Leave-One-Patient-Out cross-validation.
+    
+    # En cada fold un paciente actúa como test y el resto como train.
+    # Evita la fuga de información entre pacientes y es el estándar para evaluar modelos en datos clínicos con múltiples sujetos.
+
+    pacientes = np.unique(pac_ids)
+    n_folds   = len(pacientes)
+    print(f"\n[SVM] Leave-One-Patient-Out CV  ({n_folds} folds)...")
+
+    y_test_all,  y_pred_all, y_prob_all = [], [], []
+    pac_test_all = []
+
+    for fold_i, pac_test in enumerate(pacientes, 1):
+        mask_test  = pac_ids == pac_test
+        mask_train = ~mask_test
+
+        X_tr, y_tr = X[mask_train], y[mask_train]
+        X_te, y_te = X[mask_test],  y[mask_test]
+
+        # Saltar fold si alguna partición no tiene las dos clases
+
+        if len(np.unique(y_tr)) < 2:
+            print(f"  [fold {fold_i:>2}/{n_folds}] {pac_test}: SKIP — train sin ambas clases")
+            continue
+        if len(np.unique(y_te)) < 2:
+            print(f"  [fold {fold_i:>2}/{n_folds}] {pac_test}: SKIP — test sin ambas clases")
+            continue
+
+        pipe = Pipeline([
+            ("scaler", StandardScaler()),
+            ("svm",    SVC(C=SVM_C, kernel=SVM_KERNEL, gamma=SVM_GAMMA, probability=True, class_weight="balanced", random_state=42)),
+        ])
+        pipe.fit(X_tr, y_tr)
+        y_pred = pipe.predict(X_te)
+        y_prob = pipe.predict_proba(X_te)[:, 1]
+
+        acc_fold = (y_pred == y_te).mean()
+        print(f"  [fold {fold_i:>2}/{n_folds}] test={pac_test}  " f"n_test={len(y_te):>4}  acc={acc_fold:.3f}  " f"caídas={y_te.sum()}")
+
+        y_test_all.append(y_te)
+        y_pred_all.append(y_pred)
+        y_prob_all.append(y_prob)
+        pac_test_all.extend([pac_test] * len(y_te))
+
+    if not y_test_all:
+        return {}
+
+    y_test = np.concatenate(y_test_all)
+    y_pred = np.concatenate(y_pred_all)
+    y_prob = np.concatenate(y_prob_all)
+
+    return {
+        "y_test": y_test,
+        "y_pred": y_pred,
+        "y_prob": y_prob,
+        "n_folds_usados": len(y_test_all),
+        "n_folds_total":  n_folds,
+    }
 
 
-# EVALUACIÓN
 
-def evaluar_svm(pipeline, X_test, y_test) -> dict:
-    y_pred = pipeline.predict(X_test)
-    y_prob = pipeline.predict_proba(X_test)[:, 1]
+# EVALUACIÓN AGREGADA
 
+def evaluar_svm(y_test: np.ndarray, y_pred: np.ndarray, y_prob: np.ndarray) -> dict:
     cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
     tn, fp, fn, tp = cm.ravel()
 
@@ -132,31 +188,30 @@ def ejecutar_svm() -> dict:
 
     features = list(FEATURES) + [f for f in FEATURES_OPCIONALES if f in df.columns]
 
-    X, y, indices = etiquetar_todos_pacientes(df, features)
+    X, y, indices, pac_ids = etiquetar_todos_pacientes(df, features)
 
     if len(X) < 10:
         print("[SVM] ⚠ Insuficientes eventos detectados para entrenar.")
         return {}
 
-    print(f"[SVM] Eventos detectados: {len(X)}  (caídas reales: {y.sum()}, ruido: {(y==0).sum()})")
+    print(f"[SVM] Eventos detectados: {len(X)}  " f"(caídas reales: {y.sum()}, ruido: {(y==0).sum()})  " f"pacientes: {len(np.unique(pac_ids))}")
 
-    # División TEMPORAL (no aleatoria) — igual que RF
-    n_train = int(len(X) * TRAIN_RATIO)
-    X_train, X_test = X[:n_train], X[n_train:]
-    y_train, y_test = y[:n_train], y[n_train:]
-    idx_test = indices[n_train:]
-
-    # Comprobación mínima de clases
-    if len(np.unique(y_train)) < 2 or len(np.unique(y_test)) < 2:
-        print("[SVM] Una de las particiones no tiene ambas clases. " "Aumentar el número de pacientes o revisar umbrales.")
+    # LOPO cross-validation 
+    lopo = _lopo_cv(X, y, pac_ids)
+    if not lopo:
+        print("[SVM] ⚠ LOPO CV no produjo resultados válidos.")
         return {}
 
-    pipeline = entrenar_svm(X_train, y_train)
-    metricas = evaluar_svm(pipeline, X_test, y_test)
+    metricas = evaluar_svm(lopo["y_test"], lopo["y_pred"], lopo["y_prob"])
     metricas.update({
-        "y_test"       : y_test,
-        "indices_test" : idx_test,
-        "n_pacientes"  : len(INPUT_FILES),
+        "y_test"        : lopo["y_test"],
+        "y_pred"        : lopo["y_pred"],
+        "y_prob"        : lopo["y_prob"],
+        "indices_test"  : indices,          # se usa sólo para la serie temporal
+        "n_pacientes"   : len(INPUT_FILES),
+        "n_folds_usados": lopo["n_folds_usados"],
+        "n_folds_total" : lopo["n_folds_total"],
+        "validacion"    : "LOPO",
     })
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -166,4 +221,4 @@ def ejecutar_svm() -> dict:
     generar_dashboard_svm(metricas, df)
     escribir_reporte_svm(metricas)
 
-    return {"svm_pipeline": pipeline, "metricas": metricas}
+    return {"metricas": metricas}

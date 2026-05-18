@@ -529,6 +529,29 @@ PROCESAMIENTO APLICADO:
 PNG : Preprocessing\output\HUPA0026P.png
 
 ================================================================================
+PACIENTE : HUPA0027P
+================================================================================
+Duración : 573 días | 165,306 registros
+
+MÉTRICAS CLÍNICAS (AGP):
+    TiR (70-180 mg/dL) :   79.5%  (Objetivo >= 70%)
+    TBR (< 70 mg/dL)   :    6.3%  (Objetivo < 4%)
+    TAR (> 180 mg/dL)  :   14.2%
+    Media Glucosa      : 130.8 mg/dL
+    Desv. Estándar     : 46.2 mg/dL
+    Variabilidad (CV)  : 35.3%  -> Diabetes estable (CV <= 36%)
+    GMI (HbA1c est.)   : 6.44%
+
+PROCESAMIENTO APLICADO:
+    1. Rango corregido (40-400 mg/dL)
+    2. Suavizado (Ventana móvil 15 min)
+    3. Tiempo cíclico (Sen/Cos 24h y 7 días)
+    4. IOB (insulina activa, modelo bilineal)
+    5. COB (carbohidratos activos, modelo exponencial)
+
+PNG : Preprocessing\output\HUPA0027P.png
+
+================================================================================
 PACIENTE : HUPA0028P
 ================================================================================
 Duración : 89 días | 25,902 registros

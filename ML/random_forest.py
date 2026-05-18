@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.inspection import permutation_importance
+from sklearn.model_selection import GridSearchCV, KFold
 
 from ML.config import (
     TRAIN_FILES, TEST_FILES,
@@ -60,17 +61,47 @@ def _construir_xy(df: pd.DataFrame, features: list) -> tuple:
 # ENTRENAMIENTO
 
 def _train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
-    print(f"\n[RF] Entrenando Random Forest ({RF_N_ESTIMATORS} árboles, {len(X_train):,} muestras)...")
-    model = RandomForestRegressor(
-        n_estimators     = RF_N_ESTIMATORS,
-        max_depth        = RF_MAX_DEPTH,
-        min_samples_leaf = RF_MIN_SAMPLES,
-        random_state     = RF_RANDOM_STATE,
-        n_jobs           = -1,
+
+    #Entrena el Random Forest con búsqueda de hiperparámetros con GridSearchCV.
+
+    # n_estimators     : número de árboles (300 es suficiente, más no mejora significativamente)
+    # max_depth        : None = los nodos crecen hasta hojas puras, limitar reduce varianza
+    # min_samples_leaf : mínimo de muestras en hoja que actúa como regularización implícita
+
+    # La validación cruzada usa 3 folds temporales (TimeSeriesSplit no aplica bien aquí
+    # porque los datos son de distintos pacientes, se usa KFold shuffle=False para
+    # respetar el orden temporal dentro de cada fold).
+
+    print(f"\n[RF] Búsqueda de hiperparámetros (GridSearchCV) con {len(X_train):,} muestras...")
+
+    param_grid = {
+        "n_estimators"    : [100, 300],
+        "max_depth"       : [None, 20],
+        "min_samples_leaf": [5, 10],
+    }
+
+    base_model = RandomForestRegressor(
+        random_state = RF_RANDOM_STATE,
+        n_jobs       = -1,
     )
-    model.fit(X_train, y_train)
-    print("      -> Entrenamiento completado")
-    return model
+
+    cv = KFold(n_splits=3, shuffle=False)   # shuffle=False respeta orden temporal
+    gs = GridSearchCV(
+        estimator  = base_model,
+        param_grid = param_grid,
+        cv         = cv,
+        scoring    = "neg_root_mean_squared_error",
+        n_jobs     = -1,
+        verbose    = 1,
+        refit      = True,
+    )
+    gs.fit(X_train, y_train)
+
+    best = gs.best_params_
+    print(f"      -> Mejores hiperparámetros: {best}")
+    print(f"      -> RMSE CV (train): {-gs.best_score_:.2f} mg/dL")
+    print("      -> Reentrenando con todos los datos de train...")
+    return gs.best_estimator_
 
 
 # EVALUACIÓN
@@ -99,7 +130,7 @@ def _evaluar(
         model.feature_importances_, index=features
     ).sort_values(ascending=False)
 
-    print("\n[RF] Calculando importancia por permutación (puede tardar ~30 s)...")
+    print("\n[RF] Calculando importancia por permutación:")
     perm = permutation_importance(
         model, X_test, y_test,
         n_repeats=15, random_state=RF_RANDOM_STATE, n_jobs=-1,

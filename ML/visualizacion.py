@@ -166,13 +166,54 @@ def generar_dashboard_svm(metricas: dict, df: pd.DataFrame) -> None:
     fecha_ini = df.index.max() - pd.Timedelta(days=n_dias)
     df_plot = df.loc[fecha_ini:]
     ax4.plot(df_plot.index, df_plot[GLUCOSE_COL], color="#A8C8E8", alpha=0.6, label="Glucosa")
-    
-    # Marcadores de eventos
-    for idx, pred, real in zip(indices_test, y_pred, y_test):
-        if idx < fecha_ini: continue
-        color = C2 if (pred == 1 and real == 1) else ("#8E44AD" if real == 1 else "#E67E22")
-        ax4.axvline(idx, color=color, alpha=0.8, lw=1.5 if real == 1 else 0.8)
+    ax4.axhspan(70, 180, alpha=0.07, color=C3, label="Rango objetivo (70–180)")
+    ax4.axhline(70,  color="#E67E22", lw=0.8, ls=":", alpha=0.7)
+    ax4.axhline(180, color="#E67E22", lw=0.8, ls=":", alpha=0.7)
 
+    # Marcadores de eventos (sólo los que caen en la ventana visible)
+    import matplotlib.patches as mpatches
+    visto_tp = visto_fn = visto_fp = False
+    for idx, pred, real in zip(indices_test, y_pred, y_test):
+        if idx < fecha_ini:
+            continue
+        if pred == 1 and real == 1:          # TP — caída real detectada
+            color, lw_, label_ = C2,      1.8, "TP: caída detectada" if not visto_tp else "_"
+            visto_tp = True
+        elif real == 1:                       # FN — caída real no detectada
+            color, lw_, label_ = "#8E44AD", 1.5, "FN: caída no detectada" if not visto_fn else "_"
+            visto_fn = True
+        else:                                 # FP — falsa alarma
+            color, lw_, label_ = "#E67E22", 0.9, "FP: falsa alarma" if not visto_fp else "_"
+            visto_fp = True
+        ax4.axvline(idx, color=color, alpha=0.85, lw=lw_, label=label_)
+
+    n_folds = metricas.get("n_folds_usados", "?")
+    n_tot   = metricas.get("n_folds_total",  "?")
+    sens    = metricas.get("sensibilidad", 0)
+    espec   = metricas.get("especificidad", 0)
+    ax4.set_title(
+        f"Serie glucémica — eventos clasificados (últimos {n_dias} días)\n"
+        f"Validación LOPO ({n_folds}/{n_tot} folds válidos)  |  ",
+        fontweight="bold", fontsize=9,
+    )
+    ax4.set_ylabel("Glucosa (mg/dL)")
+    ax4.set_xlabel("Fecha")
+    ax4.legend(fontsize=8, loc="upper right", framealpha=0.9)
+    ax4.grid(alpha=0.2)
+
+    # Barra de estado: métricas clave bajo el subplot
+    ax4.text(
+        0.01, 0.03,
+        f"Sensibilidad: {sens:.3f}   Especificidad: {espec:.3f}   AUC: {roc_auc:.3f}",
+        transform=ax4.transAxes, fontsize=8, color=FG_DIM if 'FG_DIM' in dir() else "#7F8C8D",
+        va="bottom",
+    )
+
+    plt.suptitle(
+        f"SVM — Clasificación de caídas bruscas de glucosa\n"
+        f"Kernel: {SVM_KERNEL}  |  C={SVM_C}  |  Validación: LOPO ({n_folds}/{n_tot} folds)",
+        fontsize=12, fontweight="bold", y=1.01,
+    )
     plt.savefig(PLOT_SVM, dpi=150, bbox_inches="tight")
     plt.close()
 
@@ -275,7 +316,7 @@ ARCHIVOS = {
     "Preprocessing":  _ruta("Preprocessing", "output", "Preprocessing.txt"),
     "Random Forest":          _ruta("ML", "output", "RF_importancia_features.png"),
     "SVM":                    _ruta("ML", "output", "SVM_clasificacion.png"), 
-    "Clarke Error Grid":      _ruta ("ML" "output", "RF_clarke_error_grid.png"),
+    "Clarke Error Grid":      _ruta("ML", "output", "RF_clarke_error_grid.png"),
     "Reporte ML":             _ruta("ML", "output", "ML_reporte.txt"),
 }
 

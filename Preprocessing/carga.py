@@ -5,7 +5,7 @@ from config import INPUT_FILE, TIME_COL
 
 def cargar_datos(filepath: str = INPUT_FILE) -> pd.DataFrame:
     print("=" * 68)
-    print("FASE 1 -- PREPROCESAMIENTO  |  Dataset HUPA-UCM")
+    print("PREPROCESSING |  Dataset HUPA-UCM")
     print("=" * 68)
     print(f"\n[0] Cargando archivo: {filepath}")
 
