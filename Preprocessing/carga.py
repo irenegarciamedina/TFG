@@ -11,7 +11,7 @@ def cargar_datos(filepath: str = INPUT_FILE) -> pd.DataFrame:
 
     df = pd.read_csv(filepath, sep=";")
     df[TIME_COL] = pd.to_datetime(df[TIME_COL])
-    df = df.set_index(TIME_COL).sort_index()
+    df = df.set_index(TIME_COL).sort_index()        # ordena cronológicamente
 
     intervalo_ok = df.index.to_series().diff().dropna().nunique() == 1
     print(f"    Registros  : {len(df):,}")

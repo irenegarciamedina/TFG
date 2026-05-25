@@ -9,7 +9,7 @@ def compute_cob(df, carb_col='carb_input', interval_min=5, absorption_min=180):
     n_steps = (absorption_min * 3) // interval_min  # ventana = 3x tiempo medio
     t = np.arange(n_steps) * interval_min
     
-    # Curva de absorción: diferencial de una exponencial (tipo campana)ç
+    # Curva de absorción: diferencial de una exponencial (tipo campana)
     
     tau = absorption_min / np.log(2)  # constante de tiempo
     absorption_curve = (t / tau**2) * np.exp(-t / tau)
