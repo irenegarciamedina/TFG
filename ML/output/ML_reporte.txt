@@ -41,6 +41,7 @@ MÉTRICAS DE CLASIFICACIÓN:
   AUC-ROC       : 0.990
   Sensibilidad  : 0.958  (detecta caídas reales)
   Especificidad : 0.951  (rechaza ruido)
+  F1-Score      : 0.698
   Verdaderos Positivos : 1105
   Falsos Negativos     : 48  ← episodios peligrosos perdidos
   Falsos Positivos     : 910  ← alarmas innecesarias

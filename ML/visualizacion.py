@@ -204,7 +204,7 @@ def generar_dashboard_svm(metricas: dict, df: pd.DataFrame) -> None:
     # Barra de estado: métricas clave bajo el subplot
     ax4.text(
         0.01, 0.03,
-        f"Sensibilidad: {sens:.3f}   Especificidad: {espec:.3f}   AUC: {roc_auc:.3f}",
+        f"Sensibilidad: {sens:.3f}   Especificidad: {espec:.3f}   AUC: {roc_auc:.3f}   F1: {metricas.get('f1', 0):.3f}",
         transform=ax4.transAxes, fontsize=8, color=FG_DIM if 'FG_DIM' in dir() else "#7F8C8D",
         va="bottom",
     )
@@ -279,6 +279,7 @@ def escribir_reporte_svm(metricas: dict) -> None:
         f"  AUC-ROC       : {metricas['roc_auc']:.3f}",
         f"  Sensibilidad  : {sensibilidad:.3f}  (detecta caídas reales)",
         f"  Especificidad : {especificidad:.3f}  (rechaza ruido)",
+        f"  F1-Score      : {metricas.get('f1', 0):.3f}",
         f"  Verdaderos Positivos : {tp}",
         f"  Falsos Negativos     : {fn}  ← episodios peligrosos perdidos",
         f"  Falsos Positivos     : {fp}  ← alarmas innecesarias",
