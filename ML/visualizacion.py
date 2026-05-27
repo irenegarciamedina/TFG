@@ -232,7 +232,8 @@ def escribir_reporte_rf(metricas: dict) -> None:
         f"Árboles                 : {RF_N_ESTIMATORS}",
         f"División temporal       : {int(TRAIN_RATIO*100)}% train / {int((1-TRAIN_RATIO)*100)}% test",
         "",
-        "RENDIMIENTO (línea base para comparar con la LSTM):",
+        "RENDIMIENTO:",
+        f"  RMSE train : {metricas['rmse_train']:.2f} mg/dL",
         f"  RMSE test  : {metricas['rmse_test']:.2f} mg/dL",
         f"  MAE  test  : {metricas['mae_test']:.2f} mg/dL",
         f"  R²   test  : {metricas['r2_test']:.4f}",
@@ -241,13 +242,22 @@ def escribir_reporte_rf(metricas: dict) -> None:
     ]
     for rank, (feat, val) in enumerate(imp.items(), 1):
         lineas.append(f"  {rank:>2}. {feat:<28} {val:.5f}")
+
+    imp_mdi = metricas.get("importancias_mdi")
+    if imp_mdi is not None:
+        lineas += ["", "RANKING DE IMPORTANCIA (MDI — Mean Decrease Impurity):"]
+        for rank, (feat, val) in enumerate(imp_mdi.items(), 1):
+            lineas.append(f"  {rank:>2}. {feat:<28} {val:.5f}")
+
     lineas += [
         "",
         "INTERPRETACIÓN:",
         f"  Feature más influyente   : {imp.index[0]}",
         f"  Feature menos influyente : {imp.index[-1]}",
         "",
-        "  -> Las features con importancia < 0 no aportan y pueden excluirse de la LSTM.",
+        "  -> Las features con importancia < 0 no aportan",
+        f"  -> Diferencia RMSE train/test: {metricas['rmse_test'] - metricas['rmse_train']:.2f} mg/dL"
+        f"  {'(posible sobreajuste)' if metricas['rmse_test'] - metricas['rmse_train'] > 5 else '(sin sobreajuste significativo)'}",
         "=" * 80,
         "",
     ]
@@ -279,14 +289,15 @@ def escribir_reporte_svm(metricas: dict) -> None:
         f"  AUC-ROC       : {metricas['roc_auc']:.3f}",
         f"  Sensibilidad  : {sensibilidad:.3f}  (detecta caídas reales)",
         f"  Especificidad : {especificidad:.3f}  (rechaza ruido)",
+        f"  Precisión     : {metricas.get('precision', 0):.3f}  (caídas detectadas que son reales)",
         f"  F1-Score      : {metricas.get('f1', 0):.3f}",
         f"  Verdaderos Positivos : {tp}",
         f"  Falsos Negativos     : {fn}  ← episodios peligrosos perdidos",
         f"  Falsos Positivos     : {fp}  ← alarmas innecesarias",
         "",
-        "CLASES:",
-        f"  Clase 0 (Ruido)      : {r.get('Ruido', {}).get('support', 'N/A')} muestras",
-        f"  Clase 1 (Caída real) : {r.get('Caída real', {}).get('support', 'N/A')} muestras",
+        "DESGLOSE POR CLASE:",
+        f"  Clase 0 (Ruido)      — soporte: {r.get('Ruido', {}).get('support', 'N/A'):>6}  |  precisión: {r.get('Ruido', {}).get('precision', 0):.3f}  |  recall: {r.get('Ruido', {}).get('recall', 0):.3f}  |  F1: {r.get('Ruido', {}).get('f1-score', 0):.3f}",
+        f"  Clase 1 (Caída real) — soporte: {r.get('Caída real', {}).get('support', 'N/A'):>6}  |  precisión: {r.get('Caída real', {}).get('precision', 0):.3f}  |  recall: {r.get('Caída real', {}).get('recall', 0):.3f}  |  F1: {r.get('Caída real', {}).get('f1-score', 0):.3f}",
         "",
         "INTERPRETACIÓN CLÍNICA:",
         "  → Un AUC-ROC > 0.85 indica que el modelo discrimina bien entre caídas",

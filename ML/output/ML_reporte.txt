@@ -5,7 +5,8 @@ Horizonte de predicción : 40 minutos (8 pasos × 5 min)
 Árboles                 : 300
 División temporal       : 80% train / 19% test
 
-RENDIMIENTO (línea base para comparar con la LSTM):
+RENDIMIENTO:
+  RMSE train : 20.78 mg/dL
   RMSE test  : 24.06 mg/dL
   MAE  test  : 17.94 mg/dL
   R²   test  : 0.7823
@@ -23,11 +24,25 @@ RANKING DE IMPORTANCIA (permutación):
   10. bolus_volume_delivered       -0.00005
   11. time_hour_cos                -0.00092
 
+RANKING DE IMPORTANCIA (MDI — Mean Decrease Impurity):
+   1. glucose                      0.90221
+   2. heart_rate                   0.01572
+   3. cob                          0.01560
+   4. time_hour_cos                0.01523
+   5. time_hour_sin                0.01411
+   6. iob                          0.01180
+   7. basal_rate                   0.01143
+   8. time_dow_sin                 0.00697
+   9. steps                        0.00633
+  10. bolus_volume_delivered       0.00032
+  11. carb_input                   0.00028
+
 INTERPRETACIÓN:
   Feature más influyente   : glucose
   Feature menos influyente : time_hour_cos
 
-  -> Las features con importancia < 0 no aportan y pueden excluirse de la LSTM.
+  -> Las features con importancia < 0 no aportan
+  -> Diferencia RMSE train/test: 3.29 mg/dL  (sin sobreajuste significativo)
 ================================================================================
 
 ================================================================================
@@ -41,14 +56,15 @@ MÉTRICAS DE CLASIFICACIÓN:
   AUC-ROC       : 0.990
   Sensibilidad  : 0.958  (detecta caídas reales)
   Especificidad : 0.951  (rechaza ruido)
+  Precisión     : 0.548  (caídas detectadas que son reales)
   F1-Score      : 0.698
   Verdaderos Positivos : 1105
   Falsos Negativos     : 48  ← episodios peligrosos perdidos
   Falsos Positivos     : 910  ← alarmas innecesarias
 
-CLASES:
-  Clase 0 (Ruido)      : 18638.0 muestras
-  Clase 1 (Caída real) : 1153.0 muestras
+DESGLOSE POR CLASE:
+  Clase 0 (Ruido)      — soporte: 18638.0  |  precisión: 0.997  |  recall: 0.951  |  F1: 0.974
+  Clase 1 (Caída real) — soporte: 1153.0  |  precisión: 0.548  |  recall: 0.958  |  F1: 0.698
 
 INTERPRETACIÓN CLÍNICA:
   → Un AUC-ROC > 0.85 indica que el modelo discrimina bien entre caídas
