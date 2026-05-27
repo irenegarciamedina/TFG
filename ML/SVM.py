@@ -102,7 +102,7 @@ def _lopo_cv(X: np.ndarray, y: np.ndarray, pac_ids: np.ndarray) -> dict:
             ("scaler", StandardScaler()),
             ("svm",    SVC(C=SVM_C, kernel=SVM_KERNEL, gamma=SVM_GAMMA, probability=True, class_weight="balanced", random_state=42)),
         ])
-        pipe.fit(X_tr, y_tr)
+        pipe.fit(X_tr, y_tr)        # minimiza la función Hinge Loss que penaliza a las clasificaciones erróneas o la violación del margen de hiperplano separador óptimo
         y_pred = pipe.predict(X_te)
         y_prob = pipe.predict_proba(X_te)[:, 1]
 
