@@ -69,7 +69,7 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     ax1.set_xlabel("Importancia (reducción de RMSE por permutación)")
     ax1.set_title(
         f"Ranking de importancia de variables — Random Forest\n"
-        f"Predicción glucosa a {HORIZON_MIN} min · Paciente HUPA0001P",
+        f"Predicción glucosa a {HORIZON_MIN} min",
         fontweight="bold",
     )
     ax1.axvline(0, color="gray", lw=0.8, ls="--")

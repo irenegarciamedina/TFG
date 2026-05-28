@@ -244,7 +244,7 @@ def generar_clarke_error_grid(
     fig.suptitle(
         f"Evaluación Clínica — Clarke Error Grid\n"
         f"Zonas seguras A+B: {ab_pct:.1f}%  |  "
-        f"Zona A (ideal ≥ 95%): {pct['A']:.1f}%",
+        f"Zona A: {pct['A']:.1f}%",
         fontsize=13, fontweight="bold", y=1.01,
     )
 

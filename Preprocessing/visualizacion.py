@@ -90,7 +90,7 @@ def generar_diagnostico(df, patient_id: str = None):
     ax4 = fig.add_subplot(gs[2, 0])
     sc = ax4.scatter(df["time_hour_sin"], df["time_hour_cos"], c=df.index.hour + df.index.minute / 60, cmap="twilight", s=4, alpha=0.5)
     plt.colorbar(sc, ax=ax4, label="Hora del día")
-    ax4.set_title("Codificación cíclica (Evita discontinuidad 23h->0h)", fontweight="bold", fontsize=9)
+    ax4.set_title("Codificación cíclica", fontweight="bold", fontsize=9)
     ax4.set_aspect("equal")
 
     # 5. Métricas AGP
@@ -107,7 +107,7 @@ def generar_diagnostico(df, patient_id: str = None):
 
     plt.suptitle(
         f"Preprocesamiento de la Señal Glucémica — {patient_id}\n"
-        "TFG: Predicción con LSTM -- Irene García Medina",
+        "Irene García Medina",
         fontsize=12, fontweight="bold", y=1.02,
     )
     plt.savefig(plot_path, dpi=150, bbox_inches="tight")
