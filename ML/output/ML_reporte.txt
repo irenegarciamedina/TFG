@@ -69,7 +69,6 @@ DESGLOSE POR CLASE:
 INTERPRETACIÓN CLÍNICA:
   → Un AUC-ROC > 0.85 indica que el modelo discrimina bien entre caídas
     reales y artefactos de presión.
-  → Los Falsos Negativos son el error más grave (hipoglucemia no detectada).
-    Si FN > 0, considerar reducir el umbral de decisión (threshold < 0.5).
+  → Los Falsos Negativos se identifican como hipoglucemias no detectadas.
 ================================================================================
 
