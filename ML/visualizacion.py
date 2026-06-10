@@ -66,16 +66,17 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     errs   = [perm_std[f] for f in orden]
     cols   = [C1 if v == max(vals) else ("#E67E22" if v > np.mean(vals) else "#BDC3C7") for v in vals]
     bars   = ax1.barh(orden[::-1], vals[::-1], xerr=errs[::-1], color=cols[::-1], capsize=4, alpha=0.85, edgecolor="white")
-    ax1.set_xlabel("Importancia (reducción de RMSE por permutación)")
+    ax1.set_xlabel("Importancia (reducción de RMSE por permutación)", fontsize=13)
     ax1.set_title(
         f"Ranking de importancia de variables — Random Forest\n"
         f"Predicción glucosa a {HORIZON_MIN} min",
-        fontweight="bold",
+        fontweight="bold", fontsize=14,
     )
     ax1.axvline(0, color="gray", lw=0.8, ls="--")
     ax1.grid(axis="x", alpha=0.3)
     for bar, val in zip(bars, vals[::-1]):
-        ax1.text(val + 0.0005, bar.get_y() + bar.get_height() / 2, f"{val:.4f}", va="center", fontsize=9)
+        ax1.text(val + 0.0005, bar.get_y() + bar.get_height() / 2, f"{val:.4f}", va="center", fontsize=9
+        )
 
 
     # SERIE TEMPORAL VS PREDICHO
@@ -93,9 +94,9 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     ax2.set_title(
         f"Glucosa real vs. predicha (set de test)\n"
         f"RMSE = {rmse_test:.1f} mg/dL | MAE = {mae_test:.1f} mg/dL",
-        fontweight="bold", fontsize=9,
+        fontweight="bold", fontsize=11,
     )
-    ax2.set_ylabel("Glucosa (mg/dL)")
+    ax2.set_ylabel("Glucosa (mg/dL)", fontsize=12)
     ax2.legend(fontsize=8)
     ax2.grid(alpha=0.2)
 
@@ -107,16 +108,16 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
             max(y_test.max(), y_pred_test.max()) + 5]
     ax3.plot(lims, lims, "k--", lw=0.8, label="Predicción perfecta")
     ax3.set_xlim(lims); ax3.set_ylim(lims)
-    ax3.set_xlabel("Glucosa real (mg/dL)")
-    ax3.set_ylabel("Glucosa predicha (mg/dL)")
-    ax3.set_title(f"Dispersión — R² = {r2_test:.3f}", fontweight="bold", fontsize=9)
+    ax3.set_xlabel("Glucosa real (mg/dL)", fontsize=12)
+    ax3.set_ylabel("Glucosa predicha (mg/dL)", fontsize=12)
+    ax3.set_title(f"Dispersión — R² = {r2_test:.3f}", fontweight="bold", fontsize=11)
     ax3.legend(fontsize=8)
     ax3.grid(alpha=0.2)
 
     plt.suptitle(
         "Random Forest · Importancia de Features\n"
         "TFG: Irene García Medina",
-        fontsize=12, fontweight="bold", y=1.01,
+        fontsize=18, fontweight="bold", y=1.01,
     )
     plt.savefig(PLOT_RF, dpi=150, bbox_inches="tight")
     plt.close()
@@ -144,20 +145,20 @@ def generar_dashboard_svm(metricas: dict, df: pd.DataFrame) -> None:
     ax1 = fig.add_subplot(gs[0, 0])
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Ruido", "Caída real"])
     disp.plot(ax=ax1, cmap="Blues", colorbar=False)
-    ax1.set_title("Matriz de confusión", fontweight="bold", fontsize=10)
+    ax1.set_title("Matriz de confusión", fontweight="bold", fontsize=12)
 
     # 2. Curva ROC
     ax2 = fig.add_subplot(gs[0, 1])
     ax2.plot(fpr, tpr, color=C1, lw=2, label=f"ROC (AUC = {roc_auc:.3f})")
     ax2.plot([0, 1], [0, 1], "k--", lw=1)
-    ax2.set_title("Curva ROC", fontweight="bold", fontsize=10)
+    ax2.set_title("Curva ROC", fontweight="bold", fontsize=12)
     ax2.legend(fontsize=8)
 
     # 3. Distribución (Histograma)
     ax3 = fig.add_subplot(gs[0, 2])
     ax3.hist(y_prob[y_test == 0], bins=20, alpha=0.5, color=C3, label="Ruido")
     ax3.hist(y_prob[y_test == 1], bins=20, alpha=0.5, color=C2, label="Caída Real")
-    ax3.set_title("Distribución de Probabilidades", fontweight="bold", fontsize=10)
+    ax3.set_title("Distribución de Probabilidades", fontweight="bold", fontsize=12)
     ax3.legend(fontsize=8)
 
     # 4. Serie Temporal (Últimos 14 días del test)
@@ -194,10 +195,10 @@ def generar_dashboard_svm(metricas: dict, df: pd.DataFrame) -> None:
     ax4.set_title(
         f"Serie glucémica — eventos clasificados (últimos {n_dias} días)\n"
         f"Validación LOPO ({n_folds}/{n_tot} folds válidos)  |  ",
-        fontweight="bold", fontsize=9,
+        fontweight="bold", fontsize=11,
     )
-    ax4.set_ylabel("Glucosa (mg/dL)")
-    ax4.set_xlabel("Fecha")
+    ax4.set_ylabel("Glucosa (mg/dL)", fontsize=12)
+    ax4.set_xlabel("Fecha", fontsize=12)
     ax4.legend(fontsize=8, loc="upper right", framealpha=0.9)
     ax4.grid(alpha=0.2)
 
@@ -212,7 +213,7 @@ def generar_dashboard_svm(metricas: dict, df: pd.DataFrame) -> None:
     plt.suptitle(
         f"SVM — Clasificación de caídas bruscas de glucosa\n"
         f"Kernel: {SVM_KERNEL}  |  C={SVM_C}  |  Validación: LOPO ({n_folds}/{n_tot} folds)",
-        fontsize=12, fontweight="bold", y=1.01,
+        fontsize=14, fontweight="bold", y=1.01,
     )
     plt.savefig(PLOT_SVM, dpi=150, bbox_inches="tight")
     plt.close()
