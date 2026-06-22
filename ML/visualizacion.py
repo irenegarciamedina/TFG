@@ -55,6 +55,16 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+    plt.rcParams.update({
+        "font.size"        : 13,
+        "axes.titlesize"   : 15,
+        "axes.labelsize"   : 14,
+        "xtick.labelsize"  : 12,
+        "ytick.labelsize"  : 12,
+        "legend.fontsize"  : 12,
+        "figure.titlesize" : 17,
+    })
+
     fig = plt.figure(figsize=(16, 14))
     gs  = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.35)
 
@@ -66,16 +76,16 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     errs   = [perm_std[f] for f in orden]
     cols   = [C1 if v == max(vals) else ("#E67E22" if v > np.mean(vals) else "#BDC3C7") for v in vals]
     bars   = ax1.barh(orden[::-1], vals[::-1], xerr=errs[::-1], color=cols[::-1], capsize=4, alpha=0.85, edgecolor="white")
-    ax1.set_xlabel("Importancia (reducción de RMSE por permutación)", fontsize=13)
+    ax1.set_xlabel("Importancia (reducción de RMSE por permutación)")
     ax1.set_title(
         f"Ranking de importancia de variables — Random Forest\n"
         f"Predicción glucosa a {HORIZON_MIN} min",
-        fontweight="bold", fontsize=14,
+        fontweight="bold",
     )
     ax1.axvline(0, color="gray", lw=0.8, ls="--")
     ax1.grid(axis="x", alpha=0.3)
     for bar, val in zip(bars, vals[::-1]):
-        ax1.text(val + 0.0005, bar.get_y() + bar.get_height() / 2, f"{val:.4f}", va="center", fontsize=9
+        ax1.text(val + 0.0005, bar.get_y() + bar.get_height() / 2, f"{val:.4f}", va="center", fontsize=12
         )
 
 
@@ -94,10 +104,10 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
     ax2.set_title(
         f"Glucosa real vs. predicha (set de test)\n"
         f"RMSE = {rmse_test:.1f} mg/dL | MAE = {mae_test:.1f} mg/dL",
-        fontweight="bold", fontsize=11,
+        fontweight="bold",
     )
-    ax2.set_ylabel("Glucosa (mg/dL)", fontsize=12)
-    ax2.legend(fontsize=8)
+    ax2.set_ylabel("Glucosa (mg/dL)")
+    ax2.legend()
     ax2.grid(alpha=0.2)
 
     # DISPERSIÓN REAL VS PREDICHO
@@ -108,10 +118,10 @@ def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
             max(y_test.max(), y_pred_test.max()) + 5]
     ax3.plot(lims, lims, "k--", lw=0.8, label="Predicción perfecta")
     ax3.set_xlim(lims); ax3.set_ylim(lims)
-    ax3.set_xlabel("Glucosa real (mg/dL)", fontsize=12)
-    ax3.set_ylabel("Glucosa predicha (mg/dL)", fontsize=12)
-    ax3.set_title(f"Dispersión — R² = {r2_test:.3f}", fontweight="bold", fontsize=11)
-    ax3.legend(fontsize=8)
+    ax3.set_xlabel("Glucosa real (mg/dL)")
+    ax3.set_ylabel("Glucosa predicha (mg/dL)")
+    ax3.set_title(f"Dispersión — R² = {r2_test:.3f}", fontweight="bold")
+    ax3.legend()
     ax3.grid(alpha=0.2)
 
     plt.suptitle(
@@ -138,6 +148,15 @@ def generar_dashboard_svm(metricas: dict, df: pd.DataFrame) -> None:
 
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+    plt.rcParams.update({
+        "font.size"        : 13,
+        "axes.titlesize"   : 15,
+        "axes.labelsize"   : 14,
+        "xtick.labelsize"  : 12,
+        "ytick.labelsize"  : 12,
+        "legend.fontsize"  : 12,
+        "figure.titlesize" : 17,
+    })
     fig = plt.figure(figsize=(16, 12))
     gs  = gridspec.GridSpec(2, 3, figure=fig, hspace=0.50, wspace=0.35)
 
@@ -145,21 +164,21 @@ def generar_dashboard_svm(metricas: dict, df: pd.DataFrame) -> None:
     ax1 = fig.add_subplot(gs[0, 0])
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Ruido", "Caída real"])
     disp.plot(ax=ax1, cmap="Blues", colorbar=False)
-    ax1.set_title("Matriz de confusión", fontweight="bold", fontsize=12)
+    ax1.set_title("Matriz de confusión", fontweight="bold")
 
     # 2. Curva ROC
     ax2 = fig.add_subplot(gs[0, 1])
     ax2.plot(fpr, tpr, color=C1, lw=2, label=f"ROC (AUC = {roc_auc:.3f})")
     ax2.plot([0, 1], [0, 1], "k--", lw=1)
-    ax2.set_title("Curva ROC", fontweight="bold", fontsize=12)
-    ax2.legend(fontsize=8)
+    ax2.set_title("Curva ROC", fontweight="bold")
+    ax2.legend()
 
     # 3. Distribución (Histograma)
     ax3 = fig.add_subplot(gs[0, 2])
     ax3.hist(y_prob[y_test == 0], bins=20, alpha=0.5, color=C3, label="Ruido")
     ax3.hist(y_prob[y_test == 1], bins=20, alpha=0.5, color=C2, label="Caída Real")
-    ax3.set_title("Distribución de Probabilidades", fontweight="bold", fontsize=12)
-    ax3.legend(fontsize=8)
+    ax3.set_title("Distribución de Probabilidades", fontweight="bold")
+    ax3.legend()
 
     # 4. Serie Temporal (Últimos 14 días del test)
     ax4 = fig.add_subplot(gs[1, :])
@@ -195,25 +214,25 @@ def generar_dashboard_svm(metricas: dict, df: pd.DataFrame) -> None:
     ax4.set_title(
         f"Serie glucémica — eventos clasificados (últimos {n_dias} días)\n"
         f"Validación LOPO ({n_folds}/{n_tot} folds válidos)  |  ",
-        fontweight="bold", fontsize=11,
+        fontweight="bold",
     )
-    ax4.set_ylabel("Glucosa (mg/dL)", fontsize=12)
-    ax4.set_xlabel("Fecha", fontsize=12)
-    ax4.legend(fontsize=8, loc="upper right", framealpha=0.9)
+    ax4.set_ylabel("Glucosa (mg/dL)")
+    ax4.set_xlabel("Fecha")
+    ax4.legend(loc="upper right", framealpha=0.9)
     ax4.grid(alpha=0.2)
 
     # Barra de estado: métricas clave bajo el subplot
     ax4.text(
         0.01, 0.03,
         f"Sensibilidad: {sens:.3f}   Especificidad: {espec:.3f}   AUC: {roc_auc:.3f}   F1: {metricas.get('f1', 0):.3f}",
-        transform=ax4.transAxes, fontsize=8, color=FG_DIM if 'FG_DIM' in dir() else "#7F8C8D",
+        transform=ax4.transAxes, fontsize=12, color=FG_DIM if 'FG_DIM' in dir() else "#7F8C8D",
         va="bottom",
     )
 
     plt.suptitle(
         f"SVM — Clasificación de caídas bruscas de glucosa\n"
         f"Kernel: {SVM_KERNEL}  |  C={SVM_C}  |  Validación: LOPO ({n_folds}/{n_tot} folds)",
-        fontsize=14, fontweight="bold", y=1.01,
+        fontsize=17, fontweight="bold", y=1.01,
     )
     plt.savefig(PLOT_SVM, dpi=150, bbox_inches="tight")
     plt.close()
@@ -315,7 +334,7 @@ def escribir_reporte_svm(metricas: dict) -> None:
 
 
 # ===========================================================================
-# 2. VISOR INTERACTIVO TKINTER
+# 2. VISOR INTERACTIVO
 # ===========================================================================
 
 # Raíz del proyecto = carpeta padre de ML
@@ -342,8 +361,8 @@ FG_DIM   = "#7F8C8D"
 FG_WARN  = "#E67E22"
 FG_ERR   = "#E74C3C"
 
-FONT_NORMAL = ("Courier New", 10)
-FONT_SMALL  = ("Helvetica", 9)
+FONT_NORMAL = ("Courier New", 12)
+FONT_SMALL  = ("Helvetica", 11)
 
 
 def _estado_archivos():
@@ -364,7 +383,7 @@ class _PestañaImagen:
         import tkinter as tk
         marco = tk.Frame(parent_frame, bg=BG_PANEL)
         marco.pack(expand=True)
-        tk.Label(marco, text="⏳", font=("Helvetica", 48), bg=BG_PANEL, fg=FG_DIM).pack(pady=(40, 8))
+        tk.Label(marco, text="⏳", font=("Helvetica", 56), bg=BG_PANEL, fg=FG_DIM).pack(pady=(40, 8))
         tk.Label(
             marco,
             text=f"'{nombre}' aún no se ha generado.\n\nEjecuta desde la raíz:\n  python main.py",
@@ -430,7 +449,7 @@ def _build_txt_tab(parent_frame, nombre, ruta_):
     if not os.path.exists(ruta_):
         marco = tk.Frame(parent_frame, bg=BG_PANEL)
         marco.pack(expand=True)
-        tk.Label(marco, text="📄", font=("Helvetica", 48), bg=BG_PANEL, fg=FG_DIM).pack(pady=(40, 8))
+        tk.Label(marco, text="📄", font=("Helvetica", 56), bg=BG_PANEL, fg=FG_DIM).pack(pady=(40, 8))
         tk.Label(marco, text=f"'{nombre}' aún no se ha generado.\n\nEjecuta:\n  python main.py", font=FONT_SMALL, bg=BG_PANEL, fg=FG_DIM, justify="center").pack()
         return
 
@@ -463,8 +482,8 @@ def _build_txt_tab(parent_frame, nombre, ruta_):
     txt.pack(fill="both", expand=True)
 
     # Highlight
-    txt.tag_configure("sep",    foreground=ACCENT,   font=("Courier New", 10, "bold"))
-    txt.tag_configure("titulo", foreground=FG,        font=("Courier New", 10, "bold"))
+    txt.tag_configure("sep",    foreground=ACCENT,   font=("Courier New", 12, "bold"))
+    txt.tag_configure("titulo", foreground=FG,        font=("Courier New", 12, "bold"))
     txt.tag_configure("clave",  foreground=ACCENT2)
     txt.tag_configure("valor",  foreground="#F39C12")
     txt.tag_configure("flecha", foreground=FG_WARN)
@@ -528,7 +547,7 @@ def _run_visor():
     s.theme_use("clam")
     s.configure("TNotebook",     background=BG,     borderwidth=0)
     s.configure("TNotebook.Tab", background=BG_TAB, foreground=FG_DIM,
-                padding=[14, 6], font=("Helvetica", 10))
+                padding=[14, 6], font=("Helvetica", 12))
     s.map("TNotebook.Tab",
         background=[("selected", BG_PANEL)],
         foreground=[("selected", FG)])
@@ -539,7 +558,7 @@ def _run_visor():
     cab = tk.Frame(root, bg=BG, pady=10, padx=16)
     cab.pack(fill="x")
     tk.Label(cab, text="Resultados del TFG",
-            font=("Helvetica", 16, "bold"), bg=BG, fg=FG).pack(side="left")
+            font=("Helvetica", 19, "bold"), bg=BG, fg=FG).pack(side="left")
     tk.Label(cab, text="Predicción de glucosa con LSTM · HUPA0001P",
             font=FONT_SMALL, bg=BG, fg=FG_DIM).pack(side="left", padx=16)
 
