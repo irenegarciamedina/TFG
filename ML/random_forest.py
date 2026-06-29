@@ -62,7 +62,7 @@ def _construir_xy(df: pd.DataFrame, features: list) -> tuple:
 
 def _train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
 
-    #Entrena el Random Forest con búsqueda de hiperparámetros con GridSearchCV.
+    # Entrena el Random Forest con búsqueda de hiperparámetros con GridSearchCV.
 
     # n_estimators     : número de árboles (300 es suficiente, más no mejora significativamente)
     # max_depth        : None = los nodos crecen hasta hojas puras, limitar reduce varianza

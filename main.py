@@ -10,6 +10,7 @@ import Feature_Engineering.tiempo_ciclico as tiempo_ciclico
 import Feature_Engineering.IOB_insulina_activa as iob
 import Feature_Engineering.COB_carbohidratos_activos as cob
 import ML.random_forest as rf
+import ML.xgboost as xgb
 import ML.SVM as svm
 import ML.clarke_error_grid as ceg
 
@@ -109,13 +110,21 @@ def ejecutar_ml(csv_paths: list):
     print(f"  Test  : {len(test_paths)}  pacientes -> {[os.path.basename(p) for p in test_paths]}")
     print("=" * 68)
 
-    # Actualizamos el config de ML
+    # Actualizar el config de ML
     ml_cfg.INPUT_FILES  = csv_paths
     ml_cfg.TRAIN_FILES  = train_paths
     ml_cfg.TEST_FILES   = test_paths
 
+
+    # REGRESORES
+
+    print("\n" + "=" * 68)
+    print("  REGRESORES — Predicción de glucosa a 40 min")
+    print("=" * 68)
+
     resultado_rf = rf.ejecutar_random_forest()
-    svm.ejecutar_svm()
+    resultado_xgb   = xgb.ejecutar_xgboost()
+    
 
     # Clarke Error Grid (evaluación clínica del Random Forest)
 
@@ -131,6 +140,10 @@ def ejecutar_ml(csv_paths: list):
     else:
         print("[WARN] No se pudieron obtener las predicciones del RF para la CEG.")
 
+
+    # CLASIFICADORES
+
+    resultado_svm = svm.ejecutar_svm()
 
 
 if __name__ == "__main__":

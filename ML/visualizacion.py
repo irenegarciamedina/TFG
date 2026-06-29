@@ -333,6 +333,83 @@ def escribir_reporte_svm(metricas: dict) -> None:
     print(f"[SVM] Reporte actualizado: {REPORT_FILE}")
 
 
+# XGBOOST
+def generar_dashboard_xgb(metricas: dict, df: pd.DataFrame) -> None:
+    """Dashboard del modelo XGBoost: importancia de features + dispersión real vs predicho."""
+    from ML.config import OUTPUT_DIR, HORIZON_MIN
+
+    importancias = metricas["importancias"]
+    y_test       = metricas["y_test"]
+    y_pred_test  = metricas["y_pred_test"]
+    rmse_test    = metricas["rmse_test"]
+    mae_test     = metricas["mae_test"]
+    r2_test      = metricas["r2_test"]
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    plt.rcParams.update({"font.size": 13, "axes.titlesize": 15, "axes.labelsize": 14,
+                          "xtick.labelsize": 12, "ytick.labelsize": 12, "legend.fontsize": 12})
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+
+    # Importancia (gain)
+    ax = axes[0]
+    orden = importancias.index.tolist()
+    vals  = [importancias[f] for f in orden]
+    cols  = [C1 if v == max(vals) else ("#E67E22" if v > np.mean(vals) else "#BDC3C7") for v in vals]
+    ax.barh(orden[::-1], vals[::-1], color=cols[::-1], alpha=0.85, edgecolor="white")
+    ax.set_xlabel("Importancia (gain por split)")
+    ax.set_title("XGBoost — Importancia de Features (Gain)")
+    ax.axvline(x=np.mean(vals), color="gray", linestyle="--", linewidth=0.9, alpha=0.6)
+
+    # Dispersión real vs predicho
+    ax2 = axes[1]
+    lim  = (min(y_test.min(), y_pred_test.min()) - 10,
+            max(y_test.max(), y_pred_test.max()) + 10)
+    ax2.scatter(y_test, y_pred_test, alpha=0.25, s=6, color=C1, rasterized=True)
+    ax2.plot(lim, lim, "r--", linewidth=1.2, label="Predicción perfecta")
+    ax2.set_xlabel("Glucosa real (mg/dL)")
+    ax2.set_ylabel("Glucosa predicha (mg/dL)")
+    ax2.set_title(
+        f"XGBoost — Real vs Predicho ({HORIZON_MIN} min)\n"
+        f"RMSE={rmse_test:.2f}  MAE={mae_test:.2f}  R²={r2_test:.4f}"
+    )
+    ax2.set_xlim(lim); ax2.set_ylim(lim)
+    ax2.legend()
+
+    fig.suptitle("XGBoost — Predicción de Glucosa (HUPA-UCM)", fontweight="bold")
+    ruta = os.path.join(OUTPUT_DIR, "XGB_dashboard.png")
+    fig.savefig(ruta, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[XGB] Dashboard guardado: {ruta}")
+
+
+def escribir_reporte_xgb(metricas: dict) -> None:
+    from ML.config import REPORT_FILE, HORIZON_MIN, HORIZON_STEPS, OUTPUT_DIR
+
+    imp = metricas["importancias"]
+    lineas = [
+        "=" * 80,
+        "XGBOOST: PREDICCIÓN DE GLUCOSA",
+        "=" * 80,
+        f"Horizonte de predicción : {HORIZON_MIN} minutos ({HORIZON_STEPS} pasos × 5 min)",
+        "",
+        "RENDIMIENTO:",
+        f"  RMSE train : {metricas['rmse_train']:.2f} mg/dL",
+        f"  RMSE test  : {metricas['rmse_test']:.2f} mg/dL",
+        f"  MAE  test  : {metricas['mae_test']:.2f} mg/dL",
+        f"  R²   test  : {metricas['r2_test']:.4f}",
+        "",
+        "RANKING DE IMPORTANCIA (gain):",
+    ]
+    for rank, (feat, val) in enumerate(imp.items(), 1):
+        lineas.append(f"  {rank:>2}. {feat:<28} {val:.5f}")
+    lineas += ["=" * 80, ""]
+
+    with open(REPORT_FILE, "a", encoding="utf-8") as f:
+        f.write("\n".join(lineas) + "\n")
+    print(f"[XGB] Reporte actualizado: {REPORT_FILE}")
+
+
 # ===========================================================================
 # 2. VISOR INTERACTIVO
 # ===========================================================================
