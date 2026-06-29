@@ -346,37 +346,69 @@ def generar_dashboard_xgb(metricas: dict, df: pd.DataFrame) -> None:
     r2_test      = metricas["r2_test"]
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    plt.rcParams.update({"font.size": 13, "axes.titlesize": 15, "axes.labelsize": 14,
-                          "xtick.labelsize": 12, "ytick.labelsize": 12, "legend.fontsize": 12})
+    plt.rcParams.update({"font.size": 13, "axes.titlesize": 15, "axes.labelsize": 14, "xtick.labelsize": 12, "ytick.labelsize": 12, "legend.fontsize": 12})
 
-    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+    fig = plt.figure(figsize=(16, 14))
+    gs  = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.35)
 
     # Importancia (gain)
-    ax = axes[0]
+    ax = fig.add_subplot(gs[0, :])
     orden = importancias.index.tolist()
     vals  = [importancias[f] for f in orden]
     cols  = [C1 if v == max(vals) else ("#E67E22" if v > np.mean(vals) else "#BDC3C7") for v in vals]
-    ax.barh(orden[::-1], vals[::-1], color=cols[::-1], alpha=0.85, edgecolor="white")
+    bars  = ax.barh(orden[::-1], vals[::-1], color=cols[::-1], alpha=0.85, edgecolor="white")
     ax.set_xlabel("Importancia (gain por split)")
-    ax.set_title("XGBoost — Importancia de Features (Gain)")
+    ax.set_title(
+        f"Ranking de importancia de variables — XGBoost\n"
+        f"Predicción glucosa a {HORIZON_MIN} min",
+        fontweight="bold",
+    )
     ax.axvline(x=np.mean(vals), color="gray", linestyle="--", linewidth=0.9, alpha=0.6)
+    ax.grid(axis="x", alpha=0.3)
+    for bar, val in zip(bars, vals[::-1]):
+        ax.text(val + max(vals) * 0.005, bar.get_y() + bar.get_height() / 2,
+                f"{val:.4f}", va="center", fontsize=12)
+        
+
+    # Serie temporal 
+
+    ax2      = fig.add_subplot(gs[1, 0])
+    n_plot   = min(len(y_test), 288 * 2)        # máximo 48 h
+    inicio   = int(len(df) * TRAIN_RATIO) + HORIZON_STEPS
+    idx_test = df.index[inicio : inicio + n_plot]
+
+    ax2.plot(idx_test, y_test[:n_plot],      color=C3, lw=1.0, alpha=0.8, label="Real")
+    ax2.plot(idx_test, y_pred_test[:n_plot], color=C2, lw=1.0, alpha=0.8, ls="--", label=f"XGB ({HORIZON_MIN} min)")
+    ax2.axhspan(70, 180, alpha=0.06, color=C3, label="TiR")
+    ax2.axhline(70,  color="#E67E22", ls=":", lw=0.8)
+    ax2.axhline(180, color="#E67E22", ls=":", lw=0.8)
+    ax2.set_title(
+        f"Glucosa real vs. predicha (set de test)\n"
+        f"RMSE = {rmse_test:.1f} mg/dL | MAE = {mae_test:.1f} mg/dL",
+        fontweight="bold",
+    )
+    ax2.set_ylabel("Glucosa (mg/dL)")
+    ax2.legend()
+    ax2.grid(alpha=0.2)
 
     # Dispersión real vs predicho
-    ax2 = axes[1]
-    lim  = (min(y_test.min(), y_pred_test.min()) - 10,
-            max(y_test.max(), y_pred_test.max()) + 10)
-    ax2.scatter(y_test, y_pred_test, alpha=0.25, s=6, color=C1, rasterized=True)
-    ax2.plot(lim, lim, "r--", linewidth=1.2, label="Predicción perfecta")
-    ax2.set_xlabel("Glucosa real (mg/dL)")
-    ax2.set_ylabel("Glucosa predicha (mg/dL)")
-    ax2.set_title(
-        f"XGBoost — Real vs Predicho ({HORIZON_MIN} min)\n"
-        f"RMSE={rmse_test:.2f}  MAE={mae_test:.2f}  R²={r2_test:.4f}"
-    )
-    ax2.set_xlim(lim); ax2.set_ylim(lim)
-    ax2.legend()
 
-    fig.suptitle("XGBoost — Predicción de Glucosa (HUPA-UCM)", fontweight="bold")
+    ax3 = fig.add_subplot(gs[1, 1])
+    lim = (min(y_test.min(), y_pred_test.min()) - 10, max(y_test.max(), y_pred_test.max()) + 10)
+    ax3.scatter(y_test, y_pred_test, alpha=0.25, s=6, color=C1, rasterized=True)
+    ax3.plot(lim, lim, "r--", linewidth=1.2, label="Predicción perfecta")
+    ax3.set_xlabel("Glucosa real (mg/dL)")
+    ax3.set_ylabel("Glucosa predicha (mg/dL)")
+    ax3.set_title(f"Dispersión — R² = {r2_test:.3f}", fontweight="bold")
+    ax3.set_xlim(lim); ax3.set_ylim(lim)
+    ax3.legend()
+    ax3.grid(alpha=0.2)
+
+    fig.suptitle(
+        "XGBoost · Importancia de Features\n"
+        "TFG: Irene García Medina",
+        fontsize=18, fontweight="bold", y=1.01,
+    )
     ruta = os.path.join(OUTPUT_DIR, "XGB_dashboard.png")
     fig.savefig(ruta, dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -421,11 +453,12 @@ def _ruta(*partes):
     return os.path.join(RAIZ, *partes)
 
 ARCHIVOS = {
-    "Preprocessing":  _ruta("Preprocessing", "output", "Preprocessing.txt"),
+    "Preprocessing":          _ruta("Preprocessing", "output", "Preprocessing.txt"),
     "Random Forest":          _ruta("ML", "output", "RF_importancia_features.png"),
     "SVM":                    _ruta("ML", "output", "SVM_clasificacion.png"), 
     "Clarke Error Grid":      _ruta("ML", "output", "RF_clarke_error_grid.png"),
     "Reporte ML":             _ruta("ML", "output", "ML_reporte.txt"),
+    "XGBoost":                _ruta("ML", "output", "XGB_dashboard.png")
 }
 
 BG       = "#1E1E2E"
@@ -636,7 +669,7 @@ def _run_visor():
     cab.pack(fill="x")
     tk.Label(cab, text="Resultados del TFG",
             font=("Helvetica", 19, "bold"), bg=BG, fg=FG).pack(side="left")
-    tk.Label(cab, text="Predicción de glucosa con LSTM · HUPA0001P",
+    tk.Label(cab, text="Predicción y clasificación de picos de glucosa glucosa",
             font=FONT_SMALL, bg=BG, fg=FG_DIM).pack(side="left", padx=16)
 
     nb = ttk.Notebook(root)
@@ -647,6 +680,7 @@ def _run_visor():
         ("Reporte Preprocessing", ARCHIVOS["Preprocessing"]),
         ("MACHINE LEARNING",          None),
         ("Random Forest",         ARCHIVOS["Random Forest"]),
+        ("XGBoost",               ARCHIVOS["XGBoost"]),
         ("SVM",                   ARCHIVOS["SVM"]),
         ("Clarke Error Grid",    ARCHIVOS["Clarke Error Grid"]),
         ("Reporte ML",            ARCHIVOS["Reporte ML"]),

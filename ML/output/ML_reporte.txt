@@ -70,30 +70,3 @@ RANKING DE IMPORTANCIA (gain):
   11. time_dow_sin                 0.00512
 ================================================================================
 
-================================================================================
-SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS
-================================================================================
-Kernel : rbf  |  C = 1.0  |  Gamma = scale
-Umbral hipoglucemia : 70 mg/dL
-Umbral caída brusca : -15 mg/dL en 15 min
-
-MÉTRICAS DE CLASIFICACIÓN:
-  AUC-ROC       : 0.990
-  Sensibilidad  : 0.958  (detecta caídas reales)
-  Especificidad : 0.951  (rechaza ruido)
-  Precisión     : 0.548  (caídas detectadas que son reales)
-  F1-Score      : 0.698
-  Verdaderos Positivos : 1105
-  Falsos Negativos     : 48  ← episodios peligrosos perdidos
-  Falsos Positivos     : 910  ← alarmas innecesarias
-
-DESGLOSE POR CLASE:
-  Clase 0 (Ruido)      — soporte: 18638.0  |  precisión: 0.997  |  recall: 0.951  |  F1: 0.974
-  Clase 1 (Caída real) — soporte: 1153.0  |  precisión: 0.548  |  recall: 0.958  |  F1: 0.698
-
-INTERPRETACIÓN CLÍNICA:
-  → Un AUC-ROC > 0.85 indica que el modelo discrimina bien entre caídas
-    reales y artefactos de presión.
-  → Los Falsos Negativos se identifican como hipoglucemias no detectadas.
-================================================================================
-
