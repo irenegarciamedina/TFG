@@ -11,6 +11,7 @@ import Feature_Engineering.IOB_insulina_activa as iob
 import Feature_Engineering.COB_carbohidratos_activos as cob
 import ML.random_forest as rf
 import ML.xgboost as xgb
+import ML.ridge as ridge
 import ML.SVM as svm
 import ML.clarke_error_grid as ceg
 
@@ -124,7 +125,7 @@ def ejecutar_ml(csv_paths: list):
 
     resultado_rf = rf.ejecutar_random_forest()
     resultado_xgb   = xgb.ejecutar_xgboost()
-    
+    resultado_ridge = ridge.ejecutar_ridge()
 
     # Clarke Error Grid (evaluación clínica del Random Forest)
 

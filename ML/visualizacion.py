@@ -8,7 +8,6 @@ from sklearn.metrics import ConfusionMatrixDisplay
 
 from ML.config import DROP_STEPS, DROP_THRESHOLD, HYPO_THRESHOLD, PLOT_SVM, SVM_C, SVM_GAMMA, SVM_KERNEL
 from .config import GLUCOSE_COL
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 try:
@@ -442,6 +441,120 @@ def escribir_reporte_xgb(metricas: dict) -> None:
     print(f"[XGB] Reporte actualizado: {REPORT_FILE}")
 
 
+# RIDGE REGRESSION
+
+def generar_dashboard_ridge(metricas: dict, df: pd.DataFrame) -> None:
+    """Dashboard Ridge: coeficientes + dispersión real vs predicho."""
+    from ML.config import OUTPUT_DIR, HORIZON_MIN
+
+    importancias = metricas["importancias"]   # |β| normalizados
+    coefs_raw    = metricas["coefs_raw"]
+    y_test       = metricas["y_test"]
+    y_pred_test  = metricas["y_pred_test"]
+    rmse_test    = metricas["rmse_test"]
+    mae_test     = metricas["mae_test"]
+    r2_test      = metricas["r2_test"]
+    alpha        = metricas.get("alpha", "—")
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    plt.rcParams.update({"font.size": 13, "axes.titlesize": 15, "axes.labelsize": 14, "xtick.labelsize": 12, "ytick.labelsize": 12, "legend.fontsize": 12})
+
+    fig = plt.figure(figsize=(16, 14))
+    gs  = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.35) 
+
+    # Coeficientes (valor real con signo)
+    ax = fig.add_subplot(gs[0, :])
+    orden = coefs_raw.reindex(importancias.index).index.tolist()
+    vals  = [coefs_raw[f] for f in orden]
+    cols  = [C3 if v > 0 else C2 for v in vals]
+    bars  = ax.barh(orden[::-1], vals[::-1], color=cols[::-1], alpha=0.85, edgecolor="white")
+    ax.axvline(x=0, color="gray", linewidth=0.9, ls="--")
+    ax.set_xlabel("Coeficiente β (datos escalados)")
+    ax.set_title(
+        f"Ridge — Coeficientes β por feature (α = {alpha:.4f})\n"
+        f"Predicción glucosa a {HORIZON_MIN} min  |  Verde = positivo, Rojo = negativo",
+        fontweight="bold",
+    )
+    ax.grid(axis="x", alpha=0.3)
+    for bar, val in zip(bars, vals[::-1]):
+        offset = max(abs(v) for v in vals) * 0.005
+        ax.text(val + (offset if val >= 0 else -offset),
+                bar.get_y() + bar.get_height() / 2,
+                f"{val:.3f}", va="center", ha="left" if val >= 0 else "right", fontsize=11)
+        
+    
+    # Serie temporal
+
+    ax2      = fig.add_subplot(gs[1, 0])
+    n_plot   = min(len(y_test), 288 * 2)        # máximo 48 h
+    inicio   = int(len(df) * TRAIN_RATIO) + HORIZON_STEPS
+    idx_test = df.index[inicio : inicio + n_plot]
+
+    ax2.plot(idx_test, y_test[:n_plot],      color=C3, lw=1.0, alpha=0.8, label="Real")
+    ax2.plot(idx_test, y_pred_test[:n_plot], color=C2, lw=1.0, alpha=0.8, ls="--", label=f"Ridge ({HORIZON_MIN} min)")
+    ax2.axhspan(70, 180, alpha=0.06, color=C3, label="TiR")
+    ax2.axhline(70,  color="#E67E22", ls=":", lw=0.8)
+    ax2.axhline(180, color="#E67E22", ls=":", lw=0.8)
+    ax2.set_title(
+        f"Glucosa real vs. predicha (set de test)\n"
+        f"RMSE = {rmse_test:.1f} mg/dL | MAE = {mae_test:.1f} mg/dL",
+        fontweight="bold",
+    )
+    ax2.set_ylabel("Glucosa (mg/dL)")
+    ax2.legend()
+    ax2.grid(alpha=0.2)
+
+    # Dispersión real vs predicho
+    ax3 = fig.add_subplot(gs[1, 1])
+    lim = (min(y_test.min(), y_pred_test.min()) - 10, max(y_test.max(), y_pred_test.max()) + 10)
+    ax3.scatter(y_test, y_pred_test, alpha=0.25, s=6, color=C3, rasterized=True)
+    ax3.plot(lim, lim, "r--", linewidth=1.2, label="Predicción perfecta")
+    ax3.set_xlabel("Glucosa real (mg/dL)")
+    ax3.set_ylabel("Glucosa predicha (mg/dL)")
+    ax3.set_title(f"Dispersión — R² = {r2_test:.3f}", fontweight="bold")
+    ax3.set_xlim(lim); ax3.set_ylim(lim)
+    ax3.legend()
+    ax3.grid(alpha=0.2)
+
+    fig.suptitle(
+        "Ridge Regression · Coeficientes y Predicción\n"
+        "TFG: Irene García Medina",
+        fontsize=18, fontweight="bold", y=1.01,
+    )
+    ruta = os.path.join(OUTPUT_DIR, "Ridge_dashboard.png")
+    fig.savefig(ruta, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[RIDGE] Dashboard guardado: {ruta}")
+
+def escribir_reporte_ridge(metricas: dict) -> None:
+
+    imp   = metricas["importancias"]
+    alpha = metricas.get("alpha", "—")
+    lineas = [
+        "=" * 80,
+        "RIDGE REGRESSION (BASELINE LINEAL): PREDICCIÓN DE GLUCOSA",
+        "=" * 80,
+        f"Horizonte de predicción : {HORIZON_MIN} minutos ({HORIZON_STEPS} pasos × 5 min)",
+        f"Alpha óptimo (RidgeCV)  : {alpha}",
+        "",
+        "RENDIMIENTO:",
+        f"  RMSE train : {metricas['rmse_train']:.2f} mg/dL",
+        f"  RMSE test  : {metricas['rmse_test']:.2f} mg/dL",
+        f"  MAE  test  : {metricas['mae_test']:.2f} mg/dL",
+        f"  R²   test  : {metricas['r2_test']:.4f}",
+        "",
+        "COEFICIENTES (|β| ordenados por magnitud):",
+    ]
+    for rank, (feat, val) in enumerate(imp.items(), 1):
+        lineas.append(f"  {rank:>2}. {feat:<28} {val:.5f}")
+    lineas += ["=" * 80, ""]
+
+    with open(REPORT_FILE, "a", encoding="utf-8") as f:
+        f.write("\n".join(lineas) + "\n")
+    print(f"[RIDGE] Reporte actualizado: {REPORT_FILE}")
+
+
+
 # ===========================================================================
 # 2. VISOR INTERACTIVO
 # ===========================================================================
@@ -458,7 +571,8 @@ ARCHIVOS = {
     "SVM":                    _ruta("ML", "output", "SVM_clasificacion.png"), 
     "Clarke Error Grid":      _ruta("ML", "output", "RF_clarke_error_grid.png"),
     "Reporte ML":             _ruta("ML", "output", "ML_reporte.txt"),
-    "XGBoost":                _ruta("ML", "output", "XGB_dashboard.png")
+    "XGBoost":                _ruta("ML", "output", "XGB_dashboard.png"),
+    "Ridge":                  _ruta("ML", "output", "Ridge_dashboard.png")
 }
 
 BG       = "#1E1E2E"
@@ -487,7 +601,7 @@ def _cargar_imagen(ruta_, max_w, max_h):
 
 
 class _PestañaImagen:
-    """Mixin — construye el contenido de una pestaña PNG."""
+    # Mixin — construye el contenido de una pestaña PNG
 
     def _placeholder(self, parent_frame, nombre):
         import tkinter as tk
@@ -681,6 +795,7 @@ def _run_visor():
         ("MACHINE LEARNING",          None),
         ("Random Forest",         ARCHIVOS["Random Forest"]),
         ("XGBoost",               ARCHIVOS["XGBoost"]),
+        ("Ridge",                 ARCHIVOS["Ridge"]),
         ("SVM",                   ARCHIVOS["SVM"]),
         ("Clarke Error Grid",    ARCHIVOS["Clarke Error Grid"]),
         ("Reporte ML",            ARCHIVOS["Reporte ML"]),
