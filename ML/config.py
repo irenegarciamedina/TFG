@@ -26,7 +26,8 @@ PLOT_RIDGE    = os.path.join(OUTPUT_DIR, "Ridge_dashboard.png")
 PLOT_GBT      = os.path.join(OUTPUT_DIR, "GBT_dashboard.png")
 PLOT_CEG      = os.path.join(OUTPUT_DIR, "RF_clarke_error_grid.png")
 PLOT_LR       = os.path.join(OUTPUT_DIR, "LR_dashboard.png")
-PLOT_BASELINE = os.path.join(OUTPUT_DIR, "Baseline_comparativa.png")
+PLOT_LSTM     = os.path.join(OUTPUT_DIR, "LSTM_dashboard.png")
+# PLOT_BASELINE = os.path.join(OUTPUT_DIR, "Baseline_comparativa.png")
 REPORT_FILE   = os.path.join(OUTPUT_DIR, "ML_reporte.txt")
 
 # ---------------------------------------------------------------------------

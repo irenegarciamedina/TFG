@@ -203,3 +203,17 @@ RANKING DE IMPORTANCIA (gain):
   11. time_dow_sin                 0.00512
 ================================================================================
 
+================================================================================
+LSTM: PREDICCIÓN DE GLUCOSA (MODELO SECUENCIAL)
+================================================================================
+Horizonte de predicción : 40 minutos (8 pasos × 5 min)
+Ventana de entrada      : 12 pasos (60 min de histórico)
+Epochs entrenados       : 13 (EarlyStopping)
+
+RENDIMIENTO:
+  RMSE train : 0.33 mg/dL
+  RMSE test  : 0.28 mg/dL
+  MAE  test  : 0.20 mg/dL
+  R²   test  : 0.8564
+================================================================================
+

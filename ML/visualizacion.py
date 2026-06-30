@@ -450,6 +450,83 @@ def escribir_reporte_xgb(metricas: dict) -> None:
     print(f"[XGB] Reporte actualizado: {REPORT_FILE}")
 
 
+# LSTM
+
+def generar_dashboard_lstm(metricas: dict, df: pd.DataFrame) -> None:
+    """Dashboard del modelo LSTM: curva de pérdida (train/val) + dispersión real vs predicho."""
+    from ML.config import OUTPUT_DIR, HORIZON_MIN
+
+    y_test        = metricas["y_test"]
+    y_pred_test   = metricas["y_pred_test"]
+    rmse_test     = metricas["rmse_test"]
+    mae_test      = metricas["mae_test"]
+    r2_test       = metricas["r2_test"]
+    loss_hist     = metricas["loss_history"]
+    val_loss_hist = metricas["val_loss_history"]
+    lookback      = metricas.get("lookback_steps", "?")
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    plt.rcParams.update({"font.size": 13, "axes.titlesize": 15, "axes.labelsize": 14,"xtick.labelsize": 12, "ytick.labelsize": 12, "legend.fontsize": 12})
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+
+    # Curva de pérdida (train vs val) — evidencia de convergencia y ausencia de overfitting
+    ax = axes[0]
+    epochs = range(1, len(loss_hist) + 1)
+    ax.plot(epochs, loss_hist,     color=C1, lw=1.8, label="Train loss (MSE)")
+    ax.plot(epochs, val_loss_hist, color=C2, lw=1.8, ls="--", label="Val loss (MSE)")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("MSE")
+    ax.set_title(f"LSTM — Curva de entrenamiento\n(EarlyStopping, ventana={lookback} pasos)")
+    ax.legend()
+    ax.grid(alpha=0.2)
+
+    # Dispersión real vs predicho
+    ax2 = axes[1]
+    lim = (min(y_test.min(), y_pred_test.min()) - 10, max(y_test.max(), y_pred_test.max()) + 10)
+    ax2.scatter(y_test, y_pred_test, alpha=0.25, s=6, color=C1, rasterized=True)
+    ax2.plot(lim, lim, "r--", linewidth=1.2, label="Predicción perfecta")
+    ax2.set_xlabel("Glucosa real (mg/dL)")
+    ax2.set_ylabel("Glucosa predicha (mg/dL)")
+    ax2.set_title(
+        f"LSTM — Real vs Predicho ({HORIZON_MIN} min)\n"
+        f"RMSE={rmse_test:.2f}  MAE={mae_test:.2f}  R²={r2_test:.4f}"
+    )
+    ax2.set_xlim(lim); ax2.set_ylim(lim)
+    ax2.legend()
+
+    fig.suptitle("LSTM — Predicción de Glucosa (HUPA-UCM)", fontweight="bold")
+    ruta = os.path.join(OUTPUT_DIR, "LSTM_dashboard.png")
+    fig.savefig(ruta, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[LSTM] Dashboard guardado: {ruta}")
+
+def escribir_reporte_lstm(metricas: dict) -> None:
+    from ML.config import REPORT_FILE, HORIZON_MIN, HORIZON_STEPS
+
+    lineas = [
+        "=" * 80,
+        "LSTM: PREDICCIÓN DE GLUCOSA (MODELO SECUENCIAL)",
+        "=" * 80,
+        f"Horizonte de predicción : {HORIZON_MIN} minutos ({HORIZON_STEPS} pasos × 5 min)",
+        f"Ventana de entrada      : {metricas.get('lookback_steps', '?')} pasos "
+        f"({metricas.get('lookback_steps', 0) * 5} min de histórico)",
+        f"Epochs entrenados       : {metricas.get('n_epochs', '?')} (EarlyStopping)",
+        "",
+        "RENDIMIENTO:",
+        f"  RMSE train : {metricas['rmse_train']:.2f} mg/dL",
+        f"  RMSE test  : {metricas['rmse_test']:.2f} mg/dL",
+        f"  MAE  test  : {metricas['mae_test']:.2f} mg/dL",
+        f"  R²   test  : {metricas['r2_test']:.4f}",
+        "=" * 80,
+        "",
+    ]
+
+    with open(REPORT_FILE, "a", encoding="utf-8") as f:
+        f.write("\n".join(lineas) + "\n")
+    print(f"[LSTM] Reporte actualizado: {REPORT_FILE}")
+
+
 # RIDGE REGRESSION
 
 def generar_dashboard_ridge(metricas: dict, df: pd.DataFrame) -> None:
@@ -696,8 +773,9 @@ ARCHIVOS = {
     "Reporte ML":             _ruta("ML", "output", "ML_reporte.txt"),
     "XGBoost":                _ruta("ML", "output", "XGB_dashboard.png"),
     "Ridge":                  _ruta("ML", "output", "Ridge_dashboard.png"),
-    "Logistic Reg.":      _ruta("ML", "output", "LR_dashboard.png"),
-    "Gradient Boosting":  _ruta("ML", "output", "GBT_dashboard.png")
+    "Logistic Reg.":          _ruta("ML", "output", "LR_dashboard.png"),
+    "Gradient Boosting":      _ruta("ML", "output", "GBT_dashboard.png"),
+    "LSTM":                   _ruta("ML", "output", "LSTM_dashboard.png"),
 }
 
 BG       = "#1E1E2E"
@@ -922,6 +1000,7 @@ def _run_visor():
         ("Clarke Error Grid",    ARCHIVOS["Clarke Error Grid"]),
         ("XGBoost",               ARCHIVOS["XGBoost"]),
         ("Ridge",                 ARCHIVOS["Ridge"]),
+        ("LSTM",                  ARCHIVOS["LSTM"]),
         ("SVM",                   ARCHIVOS["SVM"]),
         ("Gradient Boosting",     ARCHIVOS["Gradient Boosting"]),
         ("Logistic Reg.",         ARCHIVOS["Logistic Reg."]),
