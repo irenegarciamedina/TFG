@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import tensorflow as tf
 from keras.models import Sequential
-from keras.layers import LSTM, Dense, Dropout
+from keras.layers import LSTM, Dense, Dropout, Input
 from keras.callbacks import EarlyStopping
 from keras.optimizers import Adam
 
