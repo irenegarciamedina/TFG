@@ -216,9 +216,9 @@ def ejecutar_svm() -> dict:
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    from ML.visualizacion import generar_dashboard_svm, escribir_reporte_svm
+    from ML.visualizacion import generar_dashboard_svm, _escribir_reporte_clasificador
     print("[SVM] Generando dashboard y reporte...")
     generar_dashboard_svm(metricas, df)
-    escribir_reporte_svm(metricas)
+    _escribir_reporte_clasificador(metricas, "SVM")
 
     return {"metricas": metricas}

@@ -99,27 +99,40 @@ COEFICIENTES (|β| ordenados por magnitud):
 ================================================================================
 SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS
 ================================================================================
-Kernel : rbf  |  C = 1.0  |  Gamma = scale
 Umbral hipoglucemia : 70 mg/dL
 Umbral caída brusca : -15 mg/dL en 15 min
+Validación          : LOPO  (24/25 folds usados)
 
 MÉTRICAS DE CLASIFICACIÓN:
   AUC-ROC       : 0.990
-  Sensibilidad  : 0.958  (detecta caídas reales)
-  Especificidad : 0.951  (rechaza ruido)
-  Precisión     : 0.548  (caídas detectadas que son reales)
+  Sensibilidad  : 0.958
+  Especificidad : 0.951
+  Precisión     : 0.548
   F1-Score      : 0.698
-  Verdaderos Positivos : 1105
-  Falsos Negativos     : 48  ← episodios peligrosos perdidos
-  Falsos Positivos     : 910  ← alarmas innecesarias
+  TP=1105  FP=910  FN=48  TN=17728
 
 DESGLOSE POR CLASE:
   Clase 0 (Ruido)      — soporte: 18638.0  |  precisión: 0.997  |  recall: 0.951  |  F1: 0.974
   Clase 1 (Caída real) — soporte: 1153.0  |  precisión: 0.548  |  recall: 0.958  |  F1: 0.698
+================================================================================
 
-INTERPRETACIÓN CLÍNICA:
-  → Un AUC-ROC > 0.85 indica que el modelo discrimina bien entre caídas
-    reales y artefactos de presión.
-  → Los Falsos Negativos se identifican como hipoglucemias no detectadas.
+================================================================================
+GRADIENT BOOSTING: CLASIFICACIÓN DE CAÍDAS BRUSCAS
+================================================================================
+Umbral hipoglucemia : 70 mg/dL
+Umbral caída brusca : -15 mg/dL en 15 min
+Validación          : LOPO  (24/25 folds usados)
+
+MÉTRICAS DE CLASIFICACIÓN:
+  AUC-ROC       : 0.988
+  Sensibilidad  : 0.901
+  Especificidad : 0.984
+  Precisión     : 0.772
+  F1-Score      : 0.832
+  TP=1039  FP=306  FN=114  TN=18332
+
+DESGLOSE POR CLASE:
+  Clase 0 (Ruido)      — soporte: 18638.0  |  precisión: 0.994  |  recall: 0.984  |  F1: 0.989
+  Clase 1 (Caída real) — soporte: 1153.0  |  precisión: 0.772  |  recall: 0.901  |  F1: 0.832
 ================================================================================
 

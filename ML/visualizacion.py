@@ -34,7 +34,7 @@ C3 = "#27AE60"
 
 
 # ===========================================================================
-# 1. GENERACIÓN DE GRÁFICA Y REPORTE (llamadas desde random_forest.py)
+# 1. GENERACIÓN DE GRÁFICA Y REPORTE
 # ===========================================================================
 
 def generar_dashboard_rf(metricas: dict, df: pd.DataFrame) -> None:
@@ -288,48 +288,54 @@ def escribir_reporte_rf(metricas: dict) -> None:
     print(f"[RF] Reporte guardado: {REPORT_FILE}")
 
 
-def escribir_reporte_svm(metricas: dict) -> None:
-    # Usamos mode="a" para que no borre lo de Random Forest, sino que lo añada al final
-    sensibilidad = metricas["sensibilidad"]
+
+def _escribir_reporte_clasificador(metricas: dict, titulo: str, extra_lineas: list = None) -> None:
+    from ML.config import REPORT_FILE, HYPO_THRESHOLD, DROP_THRESHOLD, DROP_STEPS
+
     cm = metricas["cm"]
-    especificidad = metricas["especificidad"]
-    r = metricas["report"]
-    tn, fp, fn, tp = cm.ravel() if cm.size == 4 else (0,0,0,0)
+    tn, fp, fn, tp = cm.ravel() if cm.size == 4 else (0, 0, 0, 0)
+    r  = metricas["report"]
 
     lineas = [
         "=" * 80,
-        "SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS",
+        f"{titulo.upper()}: CLASIFICACIÓN DE CAÍDAS BRUSCAS",
         "=" * 80,
-        f"Kernel : {SVM_KERNEL}  |  C = {SVM_C}  |  Gamma = {SVM_GAMMA}",
         f"Umbral hipoglucemia : {HYPO_THRESHOLD} mg/dL",
-       f"Umbral caída brusca : {DROP_THRESHOLD} mg/dL en {DROP_STEPS * 5} min",
+        f"Umbral caída brusca : {DROP_THRESHOLD} mg/dL en {DROP_STEPS * 5} min",
+        f"Validación          : {metricas.get('validacion', 'LOPO')}  "
+        f"({metricas.get('n_folds_usados', '?')}/{metricas.get('n_folds_total', '?')} folds usados)",
+    ]
+    if extra_lineas:
+        lineas += extra_lineas
+    lineas += [
         "",
         "MÉTRICAS DE CLASIFICACIÓN:",
         f"  AUC-ROC       : {metricas['roc_auc']:.3f}",
-        f"  Sensibilidad  : {sensibilidad:.3f}  (detecta caídas reales)",
-        f"  Especificidad : {especificidad:.3f}  (rechaza ruido)",
-        f"  Precisión     : {metricas.get('precision', 0):.3f}  (caídas detectadas que son reales)",
-        f"  F1-Score      : {metricas.get('f1', 0):.3f}",
-        f"  Verdaderos Positivos : {tp}",
-        f"  Falsos Negativos     : {fn}  ← episodios peligrosos perdidos",
-        f"  Falsos Positivos     : {fp}  ← alarmas innecesarias",
+        f"  Sensibilidad  : {metricas['sensibilidad']:.3f}",
+        f"  Especificidad : {metricas['especificidad']:.3f}",
+        f"  Precisión     : {metricas['precision']:.3f}",
+        f"  F1-Score      : {metricas['f1']:.3f}",
+        f"  TP={tp}  FP={fp}  FN={fn}  TN={tn}",
         "",
         "DESGLOSE POR CLASE:",
-        f"  Clase 0 (Ruido)      — soporte: {r.get('Ruido', {}).get('support', 'N/A'):>6}  |  precisión: {r.get('Ruido', {}).get('precision', 0):.3f}  |  recall: {r.get('Ruido', {}).get('recall', 0):.3f}  |  F1: {r.get('Ruido', {}).get('f1-score', 0):.3f}",
-        f"  Clase 1 (Caída real) — soporte: {r.get('Caída real', {}).get('support', 'N/A'):>6}  |  precisión: {r.get('Caída real', {}).get('precision', 0):.3f}  |  recall: {r.get('Caída real', {}).get('recall', 0):.3f}  |  F1: {r.get('Caída real', {}).get('f1-score', 0):.3f}",
-        "",
-        "INTERPRETACIÓN CLÍNICA:",
-        "  → Un AUC-ROC > 0.85 indica que el modelo discrimina bien entre caídas",
-        "    reales y artefactos de presión.",
-        "  → Los Falsos Negativos se identifican como hipoglucemias no detectadas.",
+        f"  Clase 0 (Ruido)      — soporte: {r.get('Ruido', {}).get('support', 'N/A'):>6}"
+        f"  |  precisión: {r.get('Ruido', {}).get('precision', 0):.3f}"
+        f"  |  recall: {r.get('Ruido', {}).get('recall', 0):.3f}"
+        f"  |  F1: {r.get('Ruido', {}).get('f1-score', 0):.3f}",
+        f"  Clase 1 (Caída real) — soporte: {r.get('Caída real', {}).get('support', 'N/A'):>6}"
+        f"  |  precisión: {r.get('Caída real', {}).get('precision', 0):.3f}"
+        f"  |  recall: {r.get('Caída real', {}).get('recall', 0):.3f}"
+        f"  |  F1: {r.get('Caída real', {}).get('f1-score', 0):.3f}",
         "=" * 80,
         "",
     ]
 
-    mode = "a"
-    with open(REPORT_FILE, mode, encoding="utf-8") as f:
+    with open(REPORT_FILE, "a", encoding="utf-8") as f:
         f.write("\n".join(lineas) + "\n")
-    print(f"[SVM] Reporte actualizado: {REPORT_FILE}")
+    print(f"[{titulo}] Reporte actualizado: {REPORT_FILE}")
+
+def escribir_reporte_gbt(metricas: dict) -> None:
+    _escribir_reporte_clasificador(metricas, "GRADIENT BOOSTING")
 
 
 # XGBOOST
@@ -554,6 +560,117 @@ def escribir_reporte_ridge(metricas: dict) -> None:
     print(f"[RIDGE] Reporte actualizado: {REPORT_FILE}")
 
 
+# GRADIENT BOOSTING
+
+def _dashboard_clasificador(metricas: dict, df: pd.DataFrame, prefijo: str, titulo: str, color: str) -> None:
+    """Dashboard genérico para clasificadores binarios.
+    Replica el layout completo del SVM: matriz de confusión, curva ROC,
+    histograma de probabilidades y serie temporal con eventos clasificados.
+    """
+    from ML.config import OUTPUT_DIR
+
+    cm           = metricas["cm"]
+    fpr          = metricas["fpr"]
+    tpr          = metricas["tpr"]
+    roc_auc      = metricas["roc_auc"]
+    y_prob       = metricas["y_prob"]
+    y_test       = metricas["y_test"]
+    indices_test = metricas["indices_test"]
+    y_pred       = metricas["y_pred"]
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    plt.rcParams.update({
+        "font.size"        : 13,
+        "axes.titlesize"   : 15,
+        "axes.labelsize"   : 14,
+        "xtick.labelsize"  : 12,
+        "ytick.labelsize"  : 12,
+        "legend.fontsize"  : 12,
+        "figure.titlesize" : 17,
+    })
+    fig = plt.figure(figsize=(16, 12))
+    gs  = gridspec.GridSpec(2, 3, figure=fig, hspace=0.50, wspace=0.35)
+
+    # 1. Matriz de confusión
+    ax1 = fig.add_subplot(gs[0, 0])
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Ruido", "Caída real"])
+    disp.plot(ax=ax1, cmap="Blues", colorbar=False)
+    ax1.set_title("Matriz de confusión", fontweight="bold")
+
+    # 2. Curva ROC
+    ax2 = fig.add_subplot(gs[0, 1])
+    ax2.plot(fpr, tpr, color=color, lw=2, label=f"ROC (AUC = {roc_auc:.3f})")
+    ax2.plot([0, 1], [0, 1], "k--", lw=1)
+    ax2.set_title("Curva ROC", fontweight="bold")
+    ax2.legend()
+
+    # 3. Distribución (Histograma)
+    ax3 = fig.add_subplot(gs[0, 2])
+    ax3.hist(y_prob[y_test == 0], bins=20, alpha=0.5, color=C3, label="Ruido")
+    ax3.hist(y_prob[y_test == 1], bins=20, alpha=0.5, color=C2, label="Caída Real")
+    ax3.set_title("Distribución de Probabilidades", fontweight="bold")
+    ax3.legend()
+
+    # 4. Serie Temporal (Últimos 14 días del test)
+    ax4 = fig.add_subplot(gs[1, :])
+    n_dias = 14
+    fecha_ini = df.index.max() - pd.Timedelta(days=n_dias)
+    df_plot = df.loc[fecha_ini:]
+    ax4.plot(df_plot.index, df_plot[GLUCOSE_COL], color="#A8C8E8", alpha=0.6, label="Glucosa")
+    ax4.axhspan(70, 180, alpha=0.07, color=C3, label="Rango objetivo (70–180)")
+    ax4.axhline(70,  color="#E67E22", lw=0.8, ls=":", alpha=0.7)
+    ax4.axhline(180, color="#E67E22", lw=0.8, ls=":", alpha=0.7)
+
+    # Marcadores de eventos (sólo los que caen en la ventana visible)
+    visto_tp = visto_fn = visto_fp = False
+    for idx, pred, real in zip(indices_test, y_pred, y_test):
+        if idx < fecha_ini:
+            continue
+        if pred == 1 and real == 1:          # TP — caída real detectada
+            color_evt, lw_, label_ = C2,       1.8, "TP: caída detectada" if not visto_tp else "_"
+            visto_tp = True
+        elif real == 1:                       # FN — caída real no detectada
+            color_evt, lw_, label_ = "#8E44AD", 1.5, "FN: caída no detectada" if not visto_fn else "_"
+            visto_fn = True
+        else:                                 # FP — falsa alarma
+            color_evt, lw_, label_ = "#E67E22", 0.9, "FP: falsa alarma" if not visto_fp else "_"
+            visto_fp = True
+        ax4.axvline(idx, color=color_evt, alpha=0.85, lw=lw_, label=label_)
+
+    n_folds = metricas.get("n_folds_usados", "?")
+    n_tot   = metricas.get("n_folds_total",  "?")
+    sens    = metricas.get("sensibilidad", 0)
+    espec   = metricas.get("especificidad", 0)
+    ax4.set_title(
+        f"Serie glucémica — eventos clasificados (últimos {n_dias} días)\n"
+        f"Validación LOPO ({n_folds}/{n_tot} folds válidos)  |  ",
+        fontweight="bold",
+    )
+    ax4.set_ylabel("Glucosa (mg/dL)")
+    ax4.set_xlabel("Fecha")
+    ax4.legend(loc="upper right", framealpha=0.9)
+    ax4.grid(alpha=0.2)
+
+    # Barra de estado: métricas clave bajo el subplot
+    ax4.text(
+        0.01, 0.03,
+        f"Sensibilidad: {sens:.3f}   Especificidad: {espec:.3f}   AUC: {roc_auc:.3f}   F1: {metricas.get('f1', 0):.3f}",
+        transform=ax4.transAxes, fontsize=12, color="#7F8C8D",
+        va="bottom",
+    )
+
+    fig.suptitle(
+        f"{titulo} — Clasificación de Caídas Bruscas (HUPA-UCM)\n"
+        f"Validación: LOPO ({n_folds}/{n_tot} folds)",
+        fontsize=17, fontweight="bold", y=1.01,
+    )
+    ruta = os.path.join(OUTPUT_DIR, f"{prefijo}_dashboard.png")
+    fig.savefig(ruta, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[{prefijo}] Dashboard guardado: {ruta}")
+
+def generar_dashboard_gbt(metricas: dict, df: pd.DataFrame) -> None:
+    _dashboard_clasificador(metricas, df, "GBT", "Gradient Boosting", "#9B59B6")
 
 # ===========================================================================
 # 2. VISOR INTERACTIVO
@@ -572,7 +689,8 @@ ARCHIVOS = {
     "Clarke Error Grid":      _ruta("ML", "output", "RF_clarke_error_grid.png"),
     "Reporte ML":             _ruta("ML", "output", "ML_reporte.txt"),
     "XGBoost":                _ruta("ML", "output", "XGB_dashboard.png"),
-    "Ridge":                  _ruta("ML", "output", "Ridge_dashboard.png")
+    "Ridge":                  _ruta("ML", "output", "Ridge_dashboard.png"),
+    "Gradient Boosting":  _ruta("ML", "output", "GBT_dashboard.png")
 }
 
 BG       = "#1E1E2E"
@@ -794,10 +912,11 @@ def _run_visor():
         ("Reporte Preprocessing", ARCHIVOS["Preprocessing"]),
         ("MACHINE LEARNING",          None),
         ("Random Forest",         ARCHIVOS["Random Forest"]),
+        ("Clarke Error Grid",    ARCHIVOS["Clarke Error Grid"]),
         ("XGBoost",               ARCHIVOS["XGBoost"]),
         ("Ridge",                 ARCHIVOS["Ridge"]),
         ("SVM",                   ARCHIVOS["SVM"]),
-        ("Clarke Error Grid",    ARCHIVOS["Clarke Error Grid"]),
+        ("Gradient Boosting",     ARCHIVOS["Gradient Boosting"]),
         ("Reporte ML",            ARCHIVOS["Reporte ML"]),
     ]
 

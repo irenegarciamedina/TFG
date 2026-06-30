@@ -13,6 +13,7 @@ import ML.random_forest as rf
 import ML.xgboost as xgb
 import ML.ridge as ridge
 import ML.SVM as svm
+import ML.gradient_boosting as gbt
 import ML.clarke_error_grid as ceg
 
 from config import OUTPUT_FILE_PATTERN, DATOS_DIR
@@ -127,6 +128,7 @@ def ejecutar_ml(csv_paths: list):
     resultado_xgb   = xgb.ejecutar_xgboost()
     resultado_ridge = ridge.ejecutar_ridge()
 
+
     # Clarke Error Grid (evaluación clínica del Random Forest)
 
     print("\n" + "=" * 68)
@@ -145,6 +147,7 @@ def ejecutar_ml(csv_paths: list):
     # CLASIFICADORES
 
     resultado_svm = svm.ejecutar_svm()
+    resultado_gbt = gbt.ejecutar_gradient_boosting()
 
 
 if __name__ == "__main__":
