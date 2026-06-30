@@ -337,6 +337,9 @@ def _escribir_reporte_clasificador(metricas: dict, titulo: str, extra_lineas: li
 def escribir_reporte_gbt(metricas: dict) -> None:
     _escribir_reporte_clasificador(metricas, "GRADIENT BOOSTING")
 
+def escribir_reporte_lr(metricas: dict) -> None:
+    _escribir_reporte_clasificador(metricas, "LOGISTIC REGRESSION", extra_lineas=["Penalización : L2 (Ridge)  |  C = 1.0  |  class_weight = balanced"])
+
 
 # XGBOOST
 def generar_dashboard_xgb(metricas: dict, df: pd.DataFrame) -> None:
@@ -672,6 +675,9 @@ def _dashboard_clasificador(metricas: dict, df: pd.DataFrame, prefijo: str, titu
 def generar_dashboard_gbt(metricas: dict, df: pd.DataFrame) -> None:
     _dashboard_clasificador(metricas, df, "GBT", "Gradient Boosting", "#9B59B6")
 
+def generar_dashboard_lr(metricas: dict, df: pd.DataFrame) -> None:
+    _dashboard_clasificador(metricas, df, "LR", "Logistic Regression", "#E67E22")
+
 # ===========================================================================
 # 2. VISOR INTERACTIVO
 # ===========================================================================
@@ -690,6 +696,7 @@ ARCHIVOS = {
     "Reporte ML":             _ruta("ML", "output", "ML_reporte.txt"),
     "XGBoost":                _ruta("ML", "output", "XGB_dashboard.png"),
     "Ridge":                  _ruta("ML", "output", "Ridge_dashboard.png"),
+    "Logistic Reg.":      _ruta("ML", "output", "LR_dashboard.png"),
     "Gradient Boosting":  _ruta("ML", "output", "GBT_dashboard.png")
 }
 
@@ -917,6 +924,7 @@ def _run_visor():
         ("Ridge",                 ARCHIVOS["Ridge"]),
         ("SVM",                   ARCHIVOS["SVM"]),
         ("Gradient Boosting",     ARCHIVOS["Gradient Boosting"]),
+        ("Logistic Reg.",         ARCHIVOS["Logistic Reg."]),
         ("Reporte ML",            ARCHIVOS["Reporte ML"]),
     ]
 

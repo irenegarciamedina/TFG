@@ -136,3 +136,70 @@ DESGLOSE POR CLASE:
   Clase 1 (Caída real) — soporte: 1153.0  |  precisión: 0.772  |  recall: 0.901  |  F1: 0.832
 ================================================================================
 
+================================================================================
+LOGISTIC REGRESSION: CLASIFICACIÓN DE CAÍDAS BRUSCAS
+================================================================================
+Umbral hipoglucemia : 70 mg/dL
+Umbral caída brusca : -15 mg/dL en 15 min
+Validación          : LOPO  (24/25 folds usados)
+Penalización : L2 (Ridge)  |  C = 1.0  |  class_weight = balanced
+
+MÉTRICAS DE CLASIFICACIÓN:
+  AUC-ROC       : 0.996
+  Sensibilidad  : 0.992
+  Especificidad : 0.958
+  Precisión     : 0.594
+  F1-Score      : 0.743
+  TP=1144  FP=781  FN=9  TN=17857
+
+DESGLOSE POR CLASE:
+  Clase 0 (Ruido)      — soporte: 18638.0  |  precisión: 0.999  |  recall: 0.958  |  F1: 0.978
+  Clase 1 (Caída real) — soporte: 1153.0  |  precisión: 0.594  |  recall: 0.992  |  F1: 0.743
+================================================================================
+
+================================================================================
+LOGISTIC REGRESSION: CLASIFICACIÓN DE CAÍDAS BRUSCAS
+================================================================================
+Umbral hipoglucemia : 70 mg/dL
+Umbral caída brusca : -15 mg/dL en 15 min
+Validación          : LOPO  (24/25 folds usados)
+Penalización : L2 (Ridge)  |  C = 1.0  |  class_weight = balanced
+
+MÉTRICAS DE CLASIFICACIÓN:
+  AUC-ROC       : 0.996
+  Sensibilidad  : 0.992
+  Especificidad : 0.958
+  Precisión     : 0.594
+  F1-Score      : 0.743
+  TP=1144  FP=781  FN=9  TN=17857
+
+DESGLOSE POR CLASE:
+  Clase 0 (Ruido)      — soporte: 18638.0  |  precisión: 0.999  |  recall: 0.958  |  F1: 0.978
+  Clase 1 (Caída real) — soporte: 1153.0  |  precisión: 0.594  |  recall: 0.992  |  F1: 0.743
+================================================================================
+
+================================================================================
+XGBOOST: PREDICCIÓN DE GLUCOSA
+================================================================================
+Horizonte de predicción : 40 minutos (8 pasos × 5 min)
+
+RENDIMIENTO:
+  RMSE train : 28.11 mg/dL
+  RMSE test  : 22.94 mg/dL
+  MAE  test  : 16.79 mg/dL
+  R²   test  : 0.8020
+
+RANKING DE IMPORTANCIA (gain):
+   1. glucose                      0.90403
+   2. iob                          0.01258
+   3. steps                        0.01211
+   4. heart_rate                   0.01120
+   5. basal_rate                   0.01051
+   6. carb_input                   0.00979
+   7. time_hour_cos                0.00961
+   8. cob                          0.00903
+   9. time_hour_sin                0.00899
+  10. bolus_volume_delivered       0.00704
+  11. time_dow_sin                 0.00512
+================================================================================
+

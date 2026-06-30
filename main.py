@@ -14,6 +14,7 @@ import ML.xgboost as xgb
 import ML.ridge as ridge
 import ML.SVM as svm
 import ML.gradient_boosting as gbt
+import ML.logistic_regression as lr
 import ML.clarke_error_grid as ceg
 
 from config import OUTPUT_FILE_PATTERN, DATOS_DIR
@@ -124,6 +125,8 @@ def ejecutar_ml(csv_paths: list):
     print("  REGRESORES — Predicción de glucosa a 40 min")
     print("=" * 68)
 
+    
+
     resultado_rf = rf.ejecutar_random_forest()
     resultado_xgb   = xgb.ejecutar_xgboost()
     resultado_ridge = ridge.ejecutar_ridge()
@@ -148,6 +151,7 @@ def ejecutar_ml(csv_paths: list):
 
     resultado_svm = svm.ejecutar_svm()
     resultado_gbt = gbt.ejecutar_gradient_boosting()
+    resultado_lr  = lr.ejecutar_logistic_regression()
 
 
 if __name__ == "__main__":
