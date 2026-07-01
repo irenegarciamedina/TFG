@@ -453,7 +453,8 @@ def escribir_reporte_xgb(metricas: dict) -> None:
 # LSTM
 
 def generar_dashboard_lstm(metricas: dict, df: pd.DataFrame) -> None:
-    """Dashboard del modelo LSTM: curva de pérdida (train/val) + dispersión real vs predicho."""
+    """Dashboard del modelo LSTM: curva de pérdida (train/val), dispersión real vs predicho,
+    serie temporal real vs predicho y distribución de residuos."""
     from ML.config import OUTPUT_DIR, HORIZON_MIN
 
     y_test        = metricas["y_test"]
@@ -465,24 +466,29 @@ def generar_dashboard_lstm(metricas: dict, df: pd.DataFrame) -> None:
     val_loss_hist = metricas["val_loss_history"]
     lookback      = metricas.get("lookback_steps", "?")
 
+    y_test      = np.asarray(y_test).ravel()
+    y_pred_test = np.asarray(y_pred_test).ravel()
+    residuos    = y_test - y_pred_test
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     plt.rcParams.update({"font.size": 13, "axes.titlesize": 15, "axes.labelsize": 14,"xtick.labelsize": 12, "ytick.labelsize": 12, "legend.fontsize": 12})
 
-    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+    fig = plt.figure(figsize=(16, 14))
+    gs  = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.30)
 
-    # Curva de pérdida (train vs val) — evidencia de convergencia y ausencia de overfitting
-    ax = axes[0]
+    # Curva de pérdida (train vs val)
+    ax1 = fig.add_subplot(gs[0, 0])
     epochs = range(1, len(loss_hist) + 1)
-    ax.plot(epochs, loss_hist,     color=C1, lw=1.8, label="Train loss (MSE)")
-    ax.plot(epochs, val_loss_hist, color=C2, lw=1.8, ls="--", label="Val loss (MSE)")
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("MSE")
-    ax.set_title(f"LSTM — Curva de entrenamiento\n(EarlyStopping, ventana={lookback} pasos)")
-    ax.legend()
-    ax.grid(alpha=0.2)
+    ax1.plot(epochs, loss_hist,     color=C1, lw=1.8, label="Train loss (MSE)")
+    ax1.plot(epochs, val_loss_hist, color=C2, lw=1.8, ls="--", label="Val loss (MSE)")
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("MSE")
+    ax1.set_title(f"LSTM — Curva de entrenamiento\n(EarlyStopping, ventana={lookback} pasos)", fontweight="bold")
+    ax1.legend()
+    ax1.grid(alpha=0.2)
 
     # Dispersión real vs predicho
-    ax2 = axes[1]
+    ax2 = fig.add_subplot(gs[0, 1])
     lim = (min(y_test.min(), y_pred_test.min()) - 10, max(y_test.max(), y_pred_test.max()) + 10)
     ax2.scatter(y_test, y_pred_test, alpha=0.25, s=6, color=C1, rasterized=True)
     ax2.plot(lim, lim, "r--", linewidth=1.2, label="Predicción perfecta")
@@ -490,23 +496,74 @@ def generar_dashboard_lstm(metricas: dict, df: pd.DataFrame) -> None:
     ax2.set_ylabel("Glucosa predicha (mg/dL)")
     ax2.set_title(
         f"LSTM — Real vs Predicho ({HORIZON_MIN} min)\n"
-        f"RMSE={rmse_test:.2f}  MAE={mae_test:.2f}  R²={r2_test:.4f}"
+        f"RMSE={rmse_test:.2f}  MAE={mae_test:.2f}  R²={r2_test:.4f}",
+        fontweight="bold",
     )
     ax2.set_xlim(lim); ax2.set_ylim(lim)
     ax2.legend()
+    ax2.grid(alpha=0.2)
 
-    fig.suptitle("LSTM — Predicción de Glucosa (HUPA-UCM)", fontweight="bold")
+    # Serie temporal real vs predicho
+    ax3 = fig.add_subplot(gs[1, 0])
+    n_plot = min(len(y_test), 288 * 2)  # máximo 48 h
+
+    idx_test = metricas.get("indices_test")
+    if idx_test is not None:
+        idx_test = idx_test[:n_plot]
+    else:
+        offset = HORIZON_STEPS + (lookback if isinstance(lookback, (int, float)) else 0)
+        inicio = int(len(df) * TRAIN_RATIO) + offset
+        idx_test = df.index[inicio: inicio + n_plot]
+        n_plot = min(n_plot, len(idx_test))
+
+    ax3.plot(idx_test, y_test[:n_plot],      color=C3, lw=1.0, alpha=0.8, label="Real")
+    ax3.plot(idx_test, y_pred_test[:n_plot], color=C2, lw=1.0, alpha=0.8, ls="--", label=f"LSTM ({HORIZON_MIN} min)")
+    ax3.axhspan(70, 180, alpha=0.06, color=C3, label="TiR")
+    ax3.axhline(70,  color="#E67E22", ls=":", lw=0.8)
+    ax3.axhline(180, color="#E67E22", ls=":", lw=0.8)
+    ax3.set_title(
+        f"Glucosa real vs. predicha (set de test)\n"
+        f"RMSE = {rmse_test:.1f} mg/dL | MAE = {mae_test:.1f} mg/dL",
+        fontweight="bold",
+    )
+    ax3.set_ylabel("Glucosa (mg/dL)")
+    ax3.legend()
+    ax3.grid(alpha=0.2)
+    ax3.tick_params(axis="x", rotation=20)
+
+    # Distribución de residuos real vs predicho
+    ax4 = fig.add_subplot(gs[1, 1])
+    ax4.hist(residuos, bins=40, color=C1, alpha=0.75, edgecolor="white")
+    ax4.axvline(0, color="black", ls="--", lw=1.0, label="Error cero")
+    ax4.axvline(residuos.mean(), color=C2, ls="-", lw=1.5,
+                label=f"Media = {residuos.mean():.2f}")
+    ax4.set_xlabel("Residuo (Real − Predicho) [mg/dL]")
+    ax4.set_ylabel("Frecuencia")
+    ax4.set_title(
+        f"Distribución de residuos\n"
+        f"σ = {residuos.std():.2f} mg/dL",
+        fontweight="bold",
+    )
+    ax4.legend()
+    ax4.grid(alpha=0.2)
+
+    fig.suptitle(
+        "LSTM — Predicción de Glucosa (HUPA-UCM)\n"
+        "TFG: Irene García Medina",
+        fontsize=18, fontweight="bold", y=1.01,
+    )
     ruta = os.path.join(OUTPUT_DIR, "LSTM_dashboard.png")
     fig.savefig(ruta, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"[LSTM] Dashboard guardado: {ruta}")
+
 
 def escribir_reporte_lstm(metricas: dict) -> None:
     from ML.config import REPORT_FILE, HORIZON_MIN, HORIZON_STEPS
 
     lineas = [
         "=" * 80,
-        "LSTM: PREDICCIÓN DE GLUCOSA (MODELO SECUENCIAL)",
+        "LSTM: PREDICCIÓN DE GLUCOSA",
         "=" * 80,
         f"Horizonte de predicción : {HORIZON_MIN} minutos ({HORIZON_STEPS} pasos × 5 min)",
         f"Ventana de entrada      : {metricas.get('lookback_steps', '?')} pasos "

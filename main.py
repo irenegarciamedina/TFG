@@ -17,6 +17,7 @@ import ML.SVM as svm
 import ML.gradient_boosting as gbt
 import ML.logistic_regression as lr
 import ML.clarke_error_grid as ceg
+import ML.comparacion as comp
 
 from config import OUTPUT_FILE_PATTERN, DATOS_DIR
 
@@ -121,13 +122,7 @@ def ejecutar_ml(csv_paths: list):
 
 
     # REGRESORES
-
-    print("\n" + "=" * 68)
-    print("  REGRESORES — Predicción de glucosa a 40 min")
-    print("=" * 68)
-
     
-    resultado_lstm  = lstm.ejecutar_lstm()
     resultado_rf = rf.ejecutar_random_forest()
     resultado_xgb   = xgb.ejecutar_xgboost()
     resultado_ridge = ridge.ejecutar_ridge()
@@ -156,6 +151,36 @@ def ejecutar_ml(csv_paths: list):
     resultado_gbt = gbt.ejecutar_gradient_boosting()
     resultado_lr  = lr.ejecutar_logistic_regression()
 
+
+    # COMPARATIVA GLOBAL
+
+    res_regresores = {
+        "Random Forest" : resultado_rf.get("metricas",    {}),
+        "XGBoost"       : resultado_xgb.get("metricas",   {}),
+        "Ridge"         : resultado_ridge.get("metricas", {}),
+        "LSTM"          : resultado_lstm.get("metricas",  {}),
+    }
+    res_clasificadores = {
+        "SVM"                 : resultado_svm.get("metricas", {}),
+        "Gradient Boosting"   : resultado_gbt.get("metricas", {}),
+        "Logistic Regression" : resultado_lr.get("metricas",  {}),
+    }
+
+    # Filtrar modelos que no produjeron resultados
+    res_regresores    = {k: v for k, v in res_regresores.items()    if v}
+    res_clasificadores = {k: v for k, v in res_clasificadores.items() if v}
+
+    if res_regresores:
+        df_reg  = comp.comparar_regresores(res_regresores)
+    if res_clasificadores:
+        df_clas = comp.comparar_clasificadores(res_clasificadores)
+
+    if res_regresores and res_clasificadores:
+        comp.generar_figura_comparativa(res_regresores, res_clasificadores)
+        comp.escribir_reporte_comparativa(df_reg, df_clas, ml_cfg.REPORT_FILE)
+
+    if res_regresores:
+        comp.generar_figura_real_vs_predicho(res_regresores)
 
 if __name__ == "__main__":
     main()

@@ -57,7 +57,7 @@ def _cargar_grupo(paths: list, etiqueta: str) -> tuple:
 
 # CONSTRUCCIÓN DE SECUENCIAS. VENTANAS DESLIZANTES SIN CRUZAR LÍMITES ENTRE PACIENTES
 
-def _construir_secuencias(df: pd.DataFrame, features: list) -> tuple:
+def _construir_secuencias(df: pd.DataFrame, features: list, glucose_col: str = "glucose_raw") -> tuple:
 
     # Para cada paciente construye ventanas deslizantes de longitud
     # LOOKBACK_STEPS sobre 'features', con target = glucosa HORIZON_STEPS
@@ -70,7 +70,7 @@ def _construir_secuencias(df: pd.DataFrame, features: list) -> tuple:
     min_len = LOOKBACK_STEPS + HORIZON_STEPS
 
     for _, grupo in df.groupby("patient_id", sort=False):
-        g    = grupo[GLUCOSE_COL].values
+        g    = grupo[glucose_col].values
         feat = grupo[features].values
         n    = len(grupo)
         if n <= min_len:
@@ -100,7 +100,8 @@ def _build_model(n_steps: int, n_features: int) -> Sequential:
     # escalas temporales dentro de la ventana de 60 min.
 
     model = Sequential([
-        LSTM(LSTM_UNITS, return_sequences=True, input_shape=(n_steps, n_features)),
+        Input(shape=(n_steps, n_features)),
+        LSTM(LSTM_UNITS, return_sequences=True),
         Dropout(DROPOUT_RATE),
         LSTM(LSTM_UNITS // 2),
         Dropout(DROPOUT_RATE),
@@ -225,6 +226,7 @@ def ejecutar_lstm() -> dict:
 
     def _escalar(df_):
         df_copia = df_.copy()
+        df_copia["_glucose_raw"] = df_copia[GLUCOSE_COL].values
         df_copia[features] = scaler.transform(df_copia[features].values)
         return df_copia
 

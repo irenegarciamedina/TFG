@@ -97,6 +97,20 @@ COEFICIENTES (|β| ordenados por magnitud):
 ================================================================================
 
 ================================================================================
+LSTM: PREDICCIÓN DE GLUCOSA
+================================================================================
+Horizonte de predicción : 40 minutos (8 pasos × 5 min)
+Ventana de entrada      : 12 pasos (60 min de histórico)
+Epochs entrenados       : 15 (EarlyStopping)
+
+RENDIMIENTO:
+  RMSE train : 23.13 mg/dL
+  RMSE test  : 19.74 mg/dL
+  MAE  test  : 14.10 mg/dL
+  R²   test  : 0.8541
+================================================================================
+
+================================================================================
 SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS
 ================================================================================
 Umbral hipoglucemia : 70 mg/dL
@@ -157,63 +171,32 @@ DESGLOSE POR CLASE:
   Clase 1 (Caída real) — soporte: 1153.0  |  precisión: 0.594  |  recall: 0.992  |  F1: 0.743
 ================================================================================
 
-================================================================================
-LOGISTIC REGRESSION: CLASIFICACIÓN DE CAÍDAS BRUSCAS
-================================================================================
-Umbral hipoglucemia : 70 mg/dL
-Umbral caída brusca : -15 mg/dL en 15 min
-Validación          : LOPO  (24/25 folds usados)
-Penalización : L2 (Ridge)  |  C = 1.0  |  class_weight = balanced
 
-MÉTRICAS DE CLASIFICACIÓN:
-  AUC-ROC       : 0.996
-  Sensibilidad  : 0.992
-  Especificidad : 0.958
-  Precisión     : 0.594
-  F1-Score      : 0.743
-  TP=1144  FP=781  FN=9  TN=17857
 
-DESGLOSE POR CLASE:
-  Clase 0 (Ruido)      — soporte: 18638.0  |  precisión: 0.999  |  recall: 0.958  |  F1: 0.978
-  Clase 1 (Caída real) — soporte: 1153.0  |  precisión: 0.594  |  recall: 0.992  |  F1: 0.743
-================================================================================
+====================================================================
+  COMPARATIVA DE MODELOS
+====================================================================
 
-================================================================================
-XGBOOST: PREDICCIÓN DE GLUCOSA
-================================================================================
-Horizonte de predicción : 40 minutos (8 pasos × 5 min)
+REGRESORES — Predicción de glucosa a 40 min
+--------------------------------------------------------------------
+               RMSE (mg/dL)  MAE (mg/dL)      R²
+Modelo                                          
+Random Forest         24.06        17.94  0.7823
+XGBoost               22.94        16.79  0.8020
+Ridge                 22.81        16.71  0.8044
+LSTM                  19.74        14.10  0.8541
+  → Mejor RMSE : LSTM
+  → Mejor R²   : LSTM
 
-RENDIMIENTO:
-  RMSE train : 28.11 mg/dL
-  RMSE test  : 22.94 mg/dL
-  MAE  test  : 16.79 mg/dL
-  R²   test  : 0.8020
 
-RANKING DE IMPORTANCIA (gain):
-   1. glucose                      0.90403
-   2. iob                          0.01258
-   3. steps                        0.01211
-   4. heart_rate                   0.01120
-   5. basal_rate                   0.01051
-   6. carb_input                   0.00979
-   7. time_hour_cos                0.00961
-   8. cob                          0.00903
-   9. time_hour_sin                0.00899
-  10. bolus_volume_delivered       0.00704
-  11. time_dow_sin                 0.00512
-================================================================================
+CLASIFICADORES — Detección de caídas bruscas (LOPO)
+--------------------------------------------------------------------
+                     Sensibilidad  Especificidad  Precisión  F1-score  AUC-ROC
+Modelo                                                                        
+SVM                        0.9584         0.9512     0.5484    0.6976   0.9903
+Gradient Boosting          0.9011         0.9836     0.7725    0.8319   0.9878
+Logistic Regression        0.9922         0.9581     0.5943    0.7433   0.9959
+  → Mejor F1      : Gradient Boosting
+  → Mejor AUC-ROC : Logistic Regression
 
-================================================================================
-LSTM: PREDICCIÓN DE GLUCOSA (MODELO SECUENCIAL)
-================================================================================
-Horizonte de predicción : 40 minutos (8 pasos × 5 min)
-Ventana de entrada      : 12 pasos (60 min de histórico)
-Epochs entrenados       : 13 (EarlyStopping)
-
-RENDIMIENTO:
-  RMSE train : 0.33 mg/dL
-  RMSE test  : 0.28 mg/dL
-  MAE  test  : 0.20 mg/dL
-  R²   test  : 0.8564
-================================================================================
-
+====================================================================
