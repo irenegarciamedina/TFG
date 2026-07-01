@@ -833,6 +833,8 @@ ARCHIVOS = {
     "Logistic Reg.":          _ruta("ML", "output", "LR_dashboard.png"),
     "Gradient Boosting":      _ruta("ML", "output", "GBT_dashboard.png"),
     "LSTM":                   _ruta("ML", "output", "LSTM_dashboard.png"),
+    "Comparativa Modelos":    _ruta("ML", "output", "Comparativa_modelos.png"),
+    "Comparativa regresores": _ruta("ML", "output", "Comparativa_real_vs_predicho.png")
 }
 
 BG       = "#1E1E2E"
@@ -1061,6 +1063,8 @@ def _run_visor():
         ("SVM",                   ARCHIVOS["SVM"]),
         ("Gradient Boosting",     ARCHIVOS["Gradient Boosting"]),
         ("Logistic Reg.",         ARCHIVOS["Logistic Reg."]),
+        ("Comparación métricas",  ARCHIVOS["Comparativa Modelos"]),
+        ("Comparación regresores", ARCHIVOS["Comparativa regresores"]),
         ("Reporte ML",            ARCHIVOS["Reporte ML"]),
     ]
 
