@@ -1,0 +1,5 @@
+# Compilados de Pytho
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
