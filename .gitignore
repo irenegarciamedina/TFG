@@ -1,5 +1,10 @@
-# Compilados de Pytho
+# Compilados de Python
 **/__pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# Configuraciones de editores de código
+.vscode/
+.idea/
+
