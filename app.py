@@ -79,7 +79,7 @@ def get_reporte_preprocesamiento(paciente_id):
     bloque_lineas = []
     guardando = False
     
-    # Buscamos de forma determinista la sección del paciente
+    # busca de forma determinista la sección del paciente
     for linea in lineas:
         if f"PACIENTE : {paciente_id}" in linea:
             guardando = True
@@ -93,7 +93,7 @@ def get_reporte_preprocesamiento(paciente_id):
 
     if bloque_lineas:
 
-                # Aseguramos que el bloque cierre estéticamente con una barra
+        # asegura que el bloque cierre estéticamente con una barra
         if not bloque_lineas[-1].startswith("===="):
             bloque_lineas.append("\n================================================================================")
         return jsonify({"text": "".join(bloque_lineas)})
@@ -111,21 +111,49 @@ def get_reporte_ml():
     with open(path_txt, 'r', encoding='utf-8') as f:
         content = f.read()
         
-    # segmenta usando expresiones regulares basadas en los delimitadores
-    bloques = re.split(r'={10,}', content)
-    
-    # Mapeo manual de los bloques del archivo
-    reportes = {
-        "rf": bloques[2].strip() if len(bloques) > 2 else "",
-        "xgb": bloques[4].strip() if len(bloques) > 4 else "",
-        "ridge": bloques[6].strip() if len(bloques) > 6 else "",
-        "lstm": bloques[8].strip() if len(bloques) > 8 else "",
-        "ceg": "Análisis mediante Clarke Error Grid (CEG) para evaluar la precisión clínica de las predicciones de glucosa en zonas de riesgo.",
-        "svm": bloques[10].strip() if len(bloques) > 10 else "",
-        "lr": bloques[14].strip() if len(bloques) > 14 else "",
-        "gbt": bloques[12].strip() if len(bloques) > 12 else "",
-        "comparativa": content.split("COMPARATIVA DE MODELOS")[-1].replace("===", "").strip() if "COMPARATIVA DE MODELOS" in content else ""
+    # mapea los identificadores únicos que inician cada bloque real en tu txt
+    tags = {
+        "rf": "RANDOM FOREST: RANKING DE IMPORTANCIA",
+        "xgb": "XGBOOST: PREDICCIÓN DE GLUCOSA",
+        "ridge": "RIDGE REGRESSION (BASELINE LINEAL):",
+        "lstm": "LSTM: PREDICCIÓN DE GLUCOSA",
+        "svm": "SVM: CLASIFICACIÓN DE CAÍDAS BRUSCAS",
+        "gbt": "GRADIENT BOOSTING: CLASIFICACIÓN DE CAÍDAS BRUSCAS",
+        "lr": "LOGISTIC REGRESSION: CLASIFICACIÓN DE CAÍDAS BRUSCAS",
+        "comparativa": "COMPARATIVA DE MODELOS"
     }
+    
+    lineas = content.splitlines()
+    reportes = {}
+    
+    # extrae cada bloque buscando dónde empieza su clave y dónde empieza cualquier otra clave posterior
+    for key, tag in tags.items():
+        bloque_lineas = []
+        guardando = False
+        
+        for linea in lineas:
+            if tag in linea:
+                guardando = True
+                bloque_lineas.append("================================================================================\n")
+            
+            if guardando:
+
+                # comprueba si la línea actual pertenece a otro bloque distinto para detener la captura
+                es_otro_tag = any(other_tag in linea for other_key, other_tag in tags.items() if other_key != key)
+                if es_otro_tag and tag not in linea:
+                    break
+                bloque_lineas.append(linea + "\n")
+                
+        if bloque_lineas:
+            if not bloque_lineas[-1].strip().startswith("===="):
+                bloque_lineas.append("================================================================================\n")
+            reportes[key] = "".join(bloque_lineas)
+        else:
+            reportes[key] = f"Bloque {tag} no localizado en el reporte."
+
+    # crea el texto de la CEG porque no se incluye en el reporte ML_reporte.txt
+    reportes["ceg"] = "================================================================================\nCLARKE ERROR GRID ANALYSIS (CEG)\n================================================================================\nEvaluación de la precisión clínica de las predicciones de glucosa en zonas de riesgo (A, B, C, D, E) para garantizar la seguridad del paciente ante decisiones automatizadas de dosificación."
+    
     return jsonify(reportes)
 
 

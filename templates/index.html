@@ -45,22 +45,21 @@
             <h2>Selección de Paciente</h2>
             <select id="pacienteDropdown" class="paciente-select" onchange="actualizarDashboardCompleto(this.value)"></select>
             <div style="font-size: 13px; color: #94a3b8; line-height: 1.4;">
-                Selecciona cualquier paciente para actualizar las series de tiempo, la gráfica de filtrado y sus métricas clínicas de procesamiento.
-            </div>
+                Selecciona cualquier paciente para mostrar su serie temporal, métricas y gráficas resultantes tras el preprocesamiento aplicado. </div>
         </div>
     </div>
 
     <div class="main-content">
         <header>
             <h1 id="main-title">Cargando Panel...</h1>
-            <div class="subtitle">Entorno de Evaluación e Inspección de Modelos de Machine Learning (Diabetes)</div>
+            <div class="subtitle">Entorno de visualización y evaluación</div>
         </header>
 
         <div class="tabs">
             <button class="tab-btn active" onclick="cambiarPestana('temporal', this)">Series Temporales</button>
             <button class="tab-btn" onclick="cambiarPestana('preprocesamiento', this)">Preprocesamiento</button>
-            <button class="tab-btn" onclick="cambiarPestana('regresores', this)">Modelos Regresión</button>
-            <button class="tab-btn" onclick="cambiarPestana('clasificadores', this)">Modelos Clasificación</button>
+            <button class="tab-btn" onclick="cambiarPestana('regresores', this)">Modelos de Regresión</button>
+            <button class="tab-btn" onclick="cambiarPestana('clasificadores', this)">Modelos de Clasificación</button>
             <button class="tab-btn" onclick="cambiarPestana('comparativa', this)">Comparativa Global</button>
         </div>
 
@@ -76,7 +75,7 @@
                     <img id="img-preprocesamiento-paciente" src="" alt="Gráfica Preprocesamiento">
                 </div>
                 <div class="text-pane">
-                    <h4>Métricas Clínicas de Control (AGP)</h4>
+                    <h4>Métricas Clínicas de Control - AGP</h4>
                     <pre id="txt-preprocesamiento-reporte" class="code-block">Cargando reporte estático del paciente...</pre>
                 </div>
             </div>
@@ -96,7 +95,7 @@
                     <img id="img-regresores" src="/api/graficas/RF_importancia_features.png" alt="Dashboard Regresor">
                 </div>
                 <div class="text-pane">
-                    <h4>Métricas de Entrenamiento y Rendimiento</h4>
+                    <h4>Métricas de entrenamiento y rendimiento de los modelos regresores</h4>
                     <pre id="txt-regresores-reporte" class="code-block">Cargando métricas del modelo...</pre>
                 </div>
             </div>
@@ -114,7 +113,7 @@
                     <img id="img-clasificadores" src="/api/graficas/SVM_clasificacion.png" alt="Dashboard Clasificador">
                 </div>
                 <div class="text-pane">
-                    <h4>Métricas de Clasificación de Caídas Bruscas (LOPO)</h4>
+                    <h4>Métricas de los modelos de clasificación</h4>
                     <pre id="txt-clasificadores-reporte" class="code-block">Cargando métricas del modelo...</pre>
                 </div>
             </div>
@@ -134,7 +133,7 @@
                     </div>
                 </div>
                 <div class="text-pane">
-                    <h4>Resumen e Interpretación del Rendimiento de Modelos</h4>
+                    <h4>Resumen e interpretación del rendimiento de modelos</h4>
                     <pre id="txt-comparativa-reporte" class="code-block">Cargando tabla de resumen comparativa...</pre>
                 </div>
             </div>
