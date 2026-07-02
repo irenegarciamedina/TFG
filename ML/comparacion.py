@@ -173,7 +173,7 @@ def generar_figura_real_vs_predicho(
 ) -> None:
     
     # Genera una figura comparativa de la serie temporal real vs. predicha para todos los regresores
-    # superppuestos en la misma gráfica
+    # superpuestos en la misma gráfica
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -197,27 +197,31 @@ def generar_figura_real_vs_predicho(
     # oscuras repetidas.
     nombre_ref = reg_nombres[0]
     y_test_ref = np.asarray(res_regresores[nombre_ref]["y_test"])
+    
     n = min(n_muestras, len(y_test_ref))
-    idx = np.arange(n)
-    ax.plot(idx, y_test_ref[:n], color="#2C3E50", linewidth=2.4, label="Real", zorder=10)
+    
+    # Dibujamos la curva Real base desde el índice 0 absoluto
+    ax.plot(np.arange(n), y_test_ref[:n], color="#2C3E50", linewidth=2.4, label="Real", zorder=10)
 
     estilos = ["--", "-.", ":", "--"]
     for i, nombre in enumerate(reg_nombres):
         m = res_regresores[nombre]
         y_pred = np.asarray(m["y_pred_test"])
 
-        # los índices reales están avanzados en LOOKBACK_STEPS - 1
         if "LSTM" in nombre.upper():
-            lookback_offset = 11 # LOOKBACK_STEPS - 1 (12 - 1)
-
-            # se construye el gráfico moviendo su eje X hacia la derecha para alinearla con el "real" de referencia
-            eje_x = np.arange(lookback_offset, len(y_pred) + lookback_offset)
+            desfase_muestras = 11  # LOOKBACK_STEPS (12) - 1
         else:
-            eje_x = np.arange(len(y_pred))
+            desfase_muestras = 0
+        # Construimos el eje X empezando exactamente en el punto correcto de la línea temporal común
+        eje_x_modelo = np.arange(desfase_muestras, len(y_pred) + desfase_muestras)
+        
+        # Recortamos los vectores para no pintar nada que exceda las muestras solicitadas (n_muestras)
+        mascara_limite = eje_x_modelo < n
+        x_plot = eje_x_modelo[mascara_limite]
+        y_plot = y_pred[:len(x_plot)]
 
-        n_i = min(n_muestras, len(y_pred))
         ax.plot(
-            np.arange(n_i), y_pred[:n_i],
+            x_plot, y_plot,
             color=PALETA[i % len(PALETA)],
             linewidth=1.6,
             linestyle=estilos[i % len(estilos)],
