@@ -74,15 +74,31 @@ def get_reporte_preprocesamiento(paciente_id):
         return jsonify({"text": "Archivo Preprocessing.txt no encontrado."})
     
     with open(path_txt, 'r', encoding='utf-8') as f:
-        content = f.read()
+        lineas = f.readlines()
+        
+    bloque_lineas = []
+    guardando = False
     
-    # divide el archivo por bloques de pacientes
-    bloques = content.split("================================================================================")
-    for b in bloques:
-        if f"PACIENTE : {paciente_id}" in b:
-            return jsonify({"text": "================================================================================\n" + b.strip() + "\n================================================================================"})
+    # Buscamos de forma determinista la sección del paciente
+    for linea in lineas:
+        if f"PACIENTE : {paciente_id}" in linea:
+            guardando = True
+            bloque_lineas.append("================================================================================\n")
             
-    return jsonify({"text": f"No se encontró reporte específico para {paciente_id}"})
+        if guardando:
+            # Si nos cruzamos con el título del SIGUIENTE paciente, dejamos de acumular
+            if "PACIENTE :" in linea and f"PACIENTE : {paciente_id}" not in linea:
+                break
+            bloque_lineas.append(linea)
+
+    if bloque_lineas:
+
+                # Aseguramos que el bloque cierre estéticamente con una barra
+        if not bloque_lineas[-1].startswith("===="):
+            bloque_lineas.append("\n================================================================================")
+        return jsonify({"text": "".join(bloque_lineas)})
+        
+    return jsonify({"text": f"================================================================================\nNo se encontró reporte específico para {paciente_id}\n================================================================================"})
 
 
 # endpoint que lee y envía los bloques estructurados de ML_reporte.txt
