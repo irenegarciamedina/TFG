@@ -205,6 +205,16 @@ def generar_figura_real_vs_predicho(
     for i, nombre in enumerate(reg_nombres):
         m = res_regresores[nombre]
         y_pred = np.asarray(m["y_pred_test"])
+
+        # los índices reales están avanzados en LOOKBACK_STEPS - 1
+        if "LSTM" in nombre.upper():
+            lookback_offset = 11 # LOOKBACK_STEPS - 1 (12 - 1)
+
+            # se construye el gráfico moviendo su eje X hacia la derecha para alinearla con el "real" de referencia
+            eje_x = np.arange(lookback_offset, len(y_pred) + lookback_offset)
+        else:
+            eje_x = np.arange(len(y_pred))
+
         n_i = min(n_muestras, len(y_pred))
         ax.plot(
             np.arange(n_i), y_pred[:n_i],
