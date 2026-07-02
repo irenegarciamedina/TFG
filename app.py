@@ -176,7 +176,7 @@ def get_preprocessing_graph(filename):
 if __name__ == '__main__':
 
     # oculta los logs de werkzeug para que no se muestren en la consola
-    logging.getLogger('werkzeug').setLevel(logging.ERROR)
+    # logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
     # evita duplicar el print con el puerto
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
