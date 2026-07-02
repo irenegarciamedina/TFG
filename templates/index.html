@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard TFG - Analizador Clínico Avanzado</title>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; display: flex; height: 100vh; color: #1e293b; }
+        .sidebar { width: 280px; background-color: #0f172a; color: white; padding: 20px; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .sidebar h2 { font-size: 18px; margin-top: 0; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .paciente-select { width: 100%; padding: 10px; border-radius: 6px; background: #1e293b; color: white; border: 1px solid #475569; font-size: 15px; margin-bottom: 20px; cursor: pointer; }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 25px; }
+        header { margin-bottom: 20px; }
+        h1 { margin: 0; color: #0f172a; font-size: 24px; }
+        .subtitle { color: #64748b; font-size: 14px; margin-top: 4px; }
+        .tabs { display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; border: none; background: none; font-size: 15px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+        .tab-btn.active { color: #2563eb; border-bottom: 2px solid #2563eb; }
+        .tab-content { display: none; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .tab-content.active { display: block; }
+        #chart-container { width: 100%; height: 650px; }
+        .model-selector-container { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; }
+        .model-btn { padding: 8px 16px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: 500; }
+        .model-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+        
+        /* Contenedores apilados verticalmente con scroll adaptativo libre */
+        .vertical-layout-container { display: flex; flex-direction: column; gap: 25px; margin-top: 15px; }
+        .image-pane { text-align: center; width: 100%; }
+        
+        /* CORRECCIÓN DE ALTURA: Eliminamos max-height para evitar recortes */
+        .image-pane img { width: 100%; max-width: 100%; max-height: none; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; display: block; margin: 0 auto; }
+        
+        /* Panel de texto tipo terminal abajo corregido */
+        .text-pane { width: 100%; background-color: #0f172a; color: #34d399; padding: 25px; border-radius: 8px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); box-sizing: border-box; margin-top: 10px; }
+        .text-pane h4 { color: #fff; margin-top: 0; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px; font-size: 16px; }
+        .code-block { font-family: 'Consolas', 'Courier New', Courier, monospace; font-size: 14px; line-height: 1.6; color: #34d399; margin: 0; white-space: pre-wrap; word-wrap: break-word; }
+        .loading { text-align: center; font-size: 16px; padding: 40px; color: #2563eb; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div>
+            <h2>Selección de Paciente</h2>
+            <select id="pacienteDropdown" class="paciente-select" onchange="actualizarDashboardCompleto(this.value)"></select>
+            <div style="font-size: 13px; color: #94a3b8; line-height: 1.4;">
+                Selecciona cualquier paciente para actualizar las series de tiempo, la gráfica de filtrado y sus métricas clínicas de procesamiento.
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h1 id="main-title">Cargando Panel...</h1>
+            <div class="subtitle">Entorno de Evaluación e Inspección de Modelos de Machine Learning (Diabetes)</div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="cambiarPestana('temporal', this)">Series Temporales</button>
+            <button class="tab-btn" onclick="cambiarPestana('preprocesamiento', this)">Preprocesamiento</button>
+            <button class="tab-btn" onclick="cambiarPestana('regresores', this)">Modelos Regresión</button>
+            <button class="tab-btn" onclick="cambiarPestana('clasificadores', this)">Modelos Clasificación</button>
+            <button class="tab-btn" onclick="cambiarPestana('comparativa', this)">Comparativa Global</button>
+        </div>
+
+        <div id="tab-temporal" class="tab-content active">
+            <div id="loading-temporal" class="loading">Cargando datos del paciente...</div>
+            <div id="chart-container"></div>
+        </div>
+
+        <div id="tab-preprocesamiento" class="tab-content">
+            <h3 style="margin-top:0;">Resultado del Filtrado y Suavizado de Señal</h3>
+            <div class="vertical-layout-container">
+                <div class="image-pane">
+                    <img id="img-preprocesamiento-paciente" src="" alt="Gráfica Preprocesamiento">
+                </div>
+                <div class="text-pane">
+                    <h4>Métricas Clínicas de Control (AGP)</h4>
+                    <pre id="txt-preprocesamiento-reporte" class="code-block">Cargando reporte estático del paciente...</pre>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-regresores" class="tab-content">
+            <div class="model-selector-container">
+                <span>Seleccionar Regresor:</span>
+                <button class="model-btn active" onclick="verGraficaML('regresores', 'RF_importancia_features.png', 'rf', this)">Random Forest (RF)</button>
+                <button class="model-btn" onclick="verGraficaML('regresores', 'XGB_dashboard.png', 'xgb', this)">XGBoost</button>
+                <button class="model-btn" onclick="verGraficaML('regresores', 'Ridge_dashboard.png', 'ridge', this)">Ridge</button>
+                <button class="model-btn" onclick="verGraficaML('regresores', 'LSTM_dashboard.png', 'lstm', this)">LSTM</button>
+                <button class="model-btn" onclick="verGraficaML('regresores', 'RF_clarke_error_grid.png', 'ceg', this)">CEG (Clarke Error Grid)</button>
+            </div>
+            <div class="vertical-layout-container">
+                <div class="image-pane">
+                    <img id="img-regresores" src="/api/graficas/RF_importancia_features.png" alt="Dashboard Regresor">
+                </div>
+                <div class="text-pane">
+                    <h4>Métricas de Entrenamiento y Rendimiento</h4>
+                    <pre id="txt-regresores-reporte" class="code-block">Cargando métricas del modelo...</pre>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-clasificadores" class="tab-content">
+            <div class="model-selector-container">
+                <span>Seleccionar Clasificador:</span>
+                <button class="model-btn active" onclick="verGraficaML('clasificadores', 'SVM_clasificacion.png', 'svm', this)">SVM</button>
+                <button class="model-btn" onclick="verGraficaML('clasificadores', 'LR_dashboard.png', 'lr', this)">Logistic Regression (LR)</button>
+                <button class="model-btn" onclick="verGraficaML('clasificadores', 'GBT_dashboard.png', 'gbt', this)">Gradient Boosting</button>
+            </div>
+            <div class="vertical-layout-container">
+                <div class="image-pane">
+                    <img id="img-clasificadores" src="/api/graficas/SVM_clasificacion.png" alt="Dashboard Clasificador">
+                </div>
+                <div class="text-pane">
+                    <h4>Métricas de Clasificación de Caídas Bruscas (LOPO)</h4>
+                    <pre id="txt-clasificadores-reporte" class="code-block">Cargando métricas del modelo...</pre>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-comparativa" class="tab-content">
+            <h3 style="margin-top:0;">Métricas Comparativas del Rendimiento Global</h3>
+            <div class="vertical-layout-container">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="image-pane">
+                        <h4 style="color: #475569; text-align: left; margin-top:0;">Resumen Comparativo de Modelos</h4>
+                        <img src="/api/graficas/Comparativa_modelos.png" alt="Comparativa Modelos">
+                    </div>
+                    <div class="image-pane">
+                        <h4 style="color: #475569; text-align: left; margin-top:0;">Valores Predichos vs Valores Reales</h4>
+                        <img src="/api/graficas/Comparativa_real_vs_predicho.png" alt="Real vs Predicho">
+                    </div>
+                </div>
+                <div class="text-pane">
+                    <h4>Resumen e Interpretación del Rendimiento de Modelos</h4>
+                    <pre id="txt-comparativa-reporte" class="code-block">Cargando tabla de resumen comparativa...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let datosLocalesPaciente = null;
+    let reportesMLGlobales = {};
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Precargar reportes de Machine Learning
+        fetch('/api/reporte/ml')
+            .then(res => res.json())
+            .then(mlReports => {
+                reportesMLGlobales = mlReports;
+                document.getElementById('txt-regresores-reporte').innerText = reportesMLGlobales['rf'];
+                document.getElementById('txt-clasificadores-reporte').innerText = reportesMLGlobales['svm'];
+                document.getElementById('txt-comparativa-reporte').innerText = reportesMLGlobales['comparativa'];
+            });
+
+        // Inicializar dropdown de pacientes
+        fetch('/api/pacientes')
+            .then(res => res.json())
+            .then(pacientes => {
+                const dropdown = document.getElementById('pacienteDropdown');
+                dropdown.innerHTML = '';
+                if(pacientes.length === 0) return;
+                
+                pacientes.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.innerText = `Paciente: ${p.id}`;
+                    dropdown.appendChild(opt);
+                });
+                actualizarDashboardCompleto(pacientes[0].id);
+            });
+    });
+
+    function actualizarDashboardCompleto(pacienteId) {
+        document.getElementById('main-title').innerText = `Monitor del Paciente: ${pacienteId}`;
+        document.getElementById('img-preprocesamiento-paciente').src = `/api/preprocesamiento/${pacienteId}.png`;
+
+        fetch(`/api/reporte/preprocesamiento/${pacienteId}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('txt-preprocesamiento-reporte').innerText = data.text;
+            });
+
+        document.getElementById('loading-temporal').style.display = 'block';
+        document.getElementById('chart-container').style.opacity = '0.3';
+
+        fetch(`/api/data/${pacienteId}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loading-temporal').style.display = 'none';
+                document.getElementById('chart-container').style.opacity = '1';
+                datosLocalesPaciente = data;
+                generarGraficosInteractivos(data);
+            });
+    }
+
+    function generarGraficosInteractivos(serverData) {
+        const traceGlucose = {
+            x: serverData.time, y: serverData.glucose,
+            type: 'scatter', mode: 'lines', name: 'Glucosa (mg/dL)',
+            line: { color: '#ef4444', width: 2.5 },
+            hovertemplate: '<b>Glucosa:</b> %{y:.1f} mg/dL<extra></extra>',
+            xaxis: 'x', yaxis: 'y1'
+        };
+        const traceIOB = {
+            x: serverData.time, y: serverData.iob,
+            type: 'scatter', mode: 'lines', name: 'Insulina Activa (IOB)',
+            line: { color: '#3b82f6', width: 2 },
+            hovertemplate: '<b>IOB:</b> %{y:.2f} U<extra></extra>',
+            xaxis: 'x', yaxis: 'y2'
+        };
+        const traceCOB = {
+            x: serverData.time, y: serverData.cob,
+            type: 'scatter', mode: 'lines', name: 'Carbohidratos (COB)',
+            line: { color: '#10b981', width: 2, dash: 'dot' },
+            hovertemplate: '<b>COB:</b> %{y:.1f} g<extra></extra>',
+            xaxis: 'x', yaxis: 'y2'
+        };
+
+        const layout = {
+            grid: { rows: 2, columns: 1, pattern: 'coupled' },
+            hovermode: 'x unified',
+            showlegend: true,
+            legend: { orientation: 'v', x: 1.05, y: 1, xanchor: 'left', yanchor: 'top' },
+            xaxis: { title: 'Línea Temporal', type: 'date', gridcolor: '#f1f5f9', rangeslider: { visible: true, thickness: 0.08 } },
+            yaxis: { title: 'Glucosa (mg/dL)', domain: [0.58, 1], gridcolor: '#e2e8f0', zeroline: false },
+            yaxis2: { title: 'Variables Activas', domain: [0, 0.42], gridcolor: '#e2e8f0', zeroline: false },
+            margin: { l: 60, r: 180, t: 30, b: 130 }, 
+            plot_bgcolor: '#ffffff', paper_bgcolor: '#ffffff'
+        };
+
+        Plotly.newPlot('chart-container', [traceGlucose, traceIOB, traceCOB], layout, { responsive: true, scrollZoom: true, displaylogo: false });
+    }
+
+    function cambiarPestana(targetTab, btn) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(`tab-${targetTab}`).classList.add('active');
+        btn.classList.add('active');
+
+        if(targetTab === 'temporal' && datosLocalesPaciente) {
+            Plotly.Plots.resize('chart-container');
+        }
+    }
+
+    function verGraficaML(section, imageName, reportKey, btn) {
+        document.getElementById(`img-${section}`).src = `/api/graficas/${imageName}`;
+        if(reportesMLGlobales[reportKey]) {
+            document.getElementById(`txt-${section}-reporte`).innerText = reportesMLGlobales[reportKey];
+        }
+        btn.parentElement.querySelectorAll('.model-btn').forEach(el => el.classList.remove('active'));
+        btn.classList.add('active');
+    }
+</script>
+</body>
+</html>
