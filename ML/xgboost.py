@@ -55,7 +55,7 @@ def _construir_xy(df: pd.DataFrame, features: list) -> tuple:
 
 def _train_xgb(X_train: np.ndarray, y_train: np.ndarray) -> XGBRegressor:
 
-    # Entrena el Random Forest con búsqueda de hiperparámetros con GridSearchCV.
+    # Entrena el XGBoost con búsqueda de hiperparámetros con GridSearchCV.
 
     # n_estimators   : número de árboles de boosting
     # max_depth      : profundidad máxima de cada árbol base

@@ -101,13 +101,13 @@ LSTM: PREDICCIÓN DE GLUCOSA
 ================================================================================
 Horizonte de predicción : 40 minutos (8 pasos × 5 min)
 Ventana de entrada      : 12 pasos (60 min de histórico)
-Epochs entrenados       : 15 (EarlyStopping)
+Epochs entrenados       : 12 (EarlyStopping)
 
 RENDIMIENTO:
-  RMSE train : 23.29 mg/dL
-  RMSE test  : 19.55 mg/dL
-  MAE  test  : 14.15 mg/dL
-  R²   test  : 0.8567
+  RMSE train : 24.01 mg/dL
+  RMSE test  : 19.12 mg/dL
+  MAE  test  : 13.77 mg/dL
+  R²   test  : 0.8630
 ================================================================================
 
 ================================================================================
@@ -184,7 +184,7 @@ Modelo
 Random Forest         24.06        17.94  0.7823
 XGBoost               22.94        16.79  0.8020
 Ridge                 22.81        16.71  0.8044
-LSTM                  19.55        14.15  0.8567
+LSTM                  19.12        13.77  0.8630
   → Mejor RMSE : LSTM
   → Mejor R²   : LSTM
 

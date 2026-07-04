@@ -145,9 +145,7 @@ def ejecutar_gradient_boosting() -> dict:
         print("[GBT] ⚠ Insuficientes eventos detectados para entrenar.")
         return {}
 
-    print(f"[GBT] Eventos detectados: {len(X)}  "
-          f"(caídas reales: {y.sum()}, ruido: {(y==0).sum()})  "
-          f"pacientes: {len(np.unique(pac_ids))}")
+    print(f"[GBT] Eventos detectados: {len(X)}  "f"(caídas reales: {y.sum()}, ruido: {(y==0).sum()})  "f"pacientes: {len(np.unique(pac_ids))}")
 
     lopo = _lopo_cv(X, y, pac_ids)
     if not lopo:

@@ -101,8 +101,7 @@ def _evaluar(
     mae_test   = mean_absolute_error(y_test, y_pred_test)
     r2_test    = r2_score(y_test, y_pred_test)
 
-    print(f"\n[RIDGE] Métricas (horizonte {HORIZON_MIN} min | "
-          f"train={len(TRAIN_FILES)} pac., test={len(TEST_FILES)} pac.):")
+    print(f"\n[RIDGE] Métricas (horizonte {HORIZON_MIN} min | "f"train={len(TRAIN_FILES)} pac., test={len(TEST_FILES)} pac.):")
     print(f"        RMSE train : {rmse_train:.2f} mg/dL")
     print(f"        RMSE test  : {rmse_test:.2f}  mg/dL")
     print(f"        MAE  test  : {mae_test:.2f}  mg/dL")
