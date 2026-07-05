@@ -80,8 +80,7 @@ def _evaluar_lr(y_test, y_pred, y_prob) -> dict:
     precision = float(tp / (tp + fp)) if (tp + fp) > 0 else 0.0
     recall    = float(tp / (tp + fn)) if (tp + fn) > 0 else 0.0
     especif   = float(tn / (tn + fp)) if (tn + fp) > 0 else 0.0
-    f1        = (2 * precision * recall / (precision + recall)
-                 if (precision + recall) > 0 else 0.0)
+    f1        = (2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0)
 
     dict_report = classification_report(
         y_test, y_pred,
@@ -140,9 +139,7 @@ def ejecutar_logistic_regression() -> dict:
         print("[LR] ⚠ Insuficientes eventos detectados para entrenar.")
         return {}
 
-    print(f"[LR] Eventos detectados: {len(X)}  "
-          f"(caídas reales: {y.sum()}, ruido: {(y==0).sum()})  "
-          f"pacientes: {len(np.unique(pac_ids))}")
+    print(f"[LR] Eventos detectados: {len(X)}  "f"(caídas reales: {y.sum()}, ruido: {(y==0).sum()})  "f"pacientes: {len(np.unique(pac_ids))}")
 
     lopo = _lopo_cv(X, y, pac_ids)
     if not lopo:
