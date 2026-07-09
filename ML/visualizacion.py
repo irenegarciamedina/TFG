@@ -1045,7 +1045,7 @@ def _run_visor():
     cab.pack(fill="x")
     tk.Label(cab, text="Resultados del TFG",
             font=("Helvetica", 19, "bold"), bg=BG, fg=FG).pack(side="left")
-    tk.Label(cab, text="Predicción y clasificación de picos de glucosa glucosa",
+    tk.Label(cab, text="Predicción y clasificación de picos de glucosa",
             font=FONT_SMALL, bg=BG, fg=FG_DIM).pack(side="left", padx=16)
 
     nb = ttk.Notebook(root)
